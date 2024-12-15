@@ -12,7 +12,6 @@ export default function Header() {
       <div className="w-full sm:max-w-[90%] lg:max-w-[1200px] mx-auto flex justify-between items-center">
         <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">Helizium</h1>
         
-        {/* Mobile Menu Button */}
         <button 
           className="lg:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -24,13 +23,12 @@ export default function Header() {
           )}
         </button>
 
-        {/* Desktop Navigation */}
         <nav className="hidden lg:flex space-x-6 items-center">
           <Link href="/" className="text-gray-300 hover:text-white transition-colors">
             Main Page
           </Link>
-          <Link href="/categories" className="text-gray-300 hover:text-white transition-colors">
-            Categories
+          <Link href="/recent" className="text-gray-300 hover:text-white transition-colors">
+            Recent Tasks
           </Link>
           <Link href="/search" className="text-gray-300 hover:text-white transition-colors">
             Search
@@ -43,7 +41,6 @@ export default function Header() {
           </Link>
         </nav>
 
-        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="absolute top-16 left-0 right-0 bg-black lg:hidden shadow-lg z-50">
             <nav className="w-full sm:max-w-[90%] lg:max-w-[1200px] mx-auto p-4 space-y-4">
@@ -54,10 +51,10 @@ export default function Header() {
                 Main Page
               </Link>
               <Link 
-                href="/categories" 
+                href="/recent" 
                 className="block text-gray-300 hover:text-white transition-colors py-2"
               >
-                Categories
+                Recent Tasks
               </Link>
               <Link 
                 href="/search" 

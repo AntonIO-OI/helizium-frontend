@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { Category, Task, SortConfig } from '../types/search';
-import { getSearchData, initializeSearchData } from '../utils/storage';
+import { getSearchData, initializeSearchData, delay } from '../utils/storage';
 import { searchTasks, sortTasks } from '../utils/search';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import CategoryItem from '../components/search/CategoryItem';
 import TaskItem from '../components/search/TaskItem';
 import SortControls from '../components/search/SortControls';
 import SearchBar from '../components/search/SearchBar';
 import FilterControls from '../components/search/FilterControls';
 import LoadingState from '../components/search/LoadingState';
+import CategoryNavigation from '../components/search/CategoryNavigation';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -48,6 +48,7 @@ export default function Search() {
     direction: 'desc',
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isTasksLoading, setIsTasksLoading] = useState(false);
 
   useEffect(() => {
     initializeSearchData();
@@ -119,7 +120,10 @@ export default function Search() {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  const handleClearFilters = () => {
+  const handleClearFilters = async () => {
+    setIsTasksLoading(true);
+    await delay(400);
+    
     setSelectedCategory(null);
 
     const prices = tasks.map((task) => task.price);
@@ -139,6 +143,22 @@ export default function Search() {
     setSearchQuery('');
     setActiveSearchQuery('');
     setSortConfig({ field: 'date', direction: 'desc' });
+    
+    setIsTasksLoading(false);
+  };
+
+  const handleCategoryChange = async (categoryId: number | null) => {
+    setIsTasksLoading(true);
+    await delay(400);
+    setSelectedCategory(categoryId);
+    setIsTasksLoading(false);
+  };
+
+  const handlePageChange = async (page: number) => {
+    setIsTasksLoading(true);
+    await delay(400);
+    setCurrentPage(page);
+    setIsTasksLoading(false);
   };
 
   if (isLoading) {
@@ -185,25 +205,19 @@ export default function Search() {
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="w-full lg:w-80 flex-shrink-0">
               <div className="sticky top-6 space-y-8">
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold">Categories</h2>
-                  <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                    {categories.map((category) => (
-                      <CategoryItem
-                        key={category.id}
-                        category={category}
-                        isSelected={selectedCategory === category.id}
-                        onClick={() =>
-                          setSelectedCategory(
-                            selectedCategory === category.id
-                              ? null
-                              : category.id,
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
+                <CategoryNavigation
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onNavigateToParent={() => {
+                    const current = categories.find(c => c.id === selectedCategory);
+                    if (current?.parentCategory) {
+                      handleCategoryChange(current.parentCategory);
+                    } else {
+                      handleCategoryChange(null);
+                    }
+                  }}
+                  onSelectCategory={handleCategoryChange}
+                />
 
                 <FilterControls
                   priceRange={priceRange}
@@ -230,7 +244,9 @@ export default function Search() {
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                {paginatedResults.length > 0 ? (
+                {isTasksLoading ? (
+                  <LoadingState />
+                ) : paginatedResults.length > 0 ? (
                   paginatedResults.map((task) => (
                     <TaskItem key={task.id} task={task} />
                   ))
@@ -244,7 +260,7 @@ export default function Search() {
               {totalPages > 1 && (
                 <div className="flex flex-wrap justify-center gap-2 mt-8">
                   <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                     className="px-3 py-1.5 border rounded-md disabled:opacity-50 hover:bg-gray-50 text-sm md:text-base md:px-4 md:py-2"
                   >
@@ -263,7 +279,7 @@ export default function Search() {
                         ) : (
                           <button
                             key={page}
-                            onClick={() => setCurrentPage(Number(page))}
+                            onClick={() => handlePageChange(Number(page))}
                             className={`px-3 py-1.5 border rounded-md text-sm md:text-base md:px-4 md:py-2 min-w-[2.5rem] md:min-w-[3rem]
                             ${
                               currentPage === page
@@ -277,9 +293,7 @@ export default function Search() {
                     )}
                   </div>
                   <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                     className="px-3 py-1.5 border rounded-md disabled:opacity-50 hover:bg-gray-50 text-sm md:text-base md:px-4 md:py-2"
                   >
