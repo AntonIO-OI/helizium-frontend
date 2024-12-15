@@ -50,6 +50,15 @@ export default function Search() {
   const [isLoading, setIsLoading] = useState(true);
   const [isTasksLoading, setIsTasksLoading] = useState(false);
 
+  const getChildCategoryIds = (categoryId: number): number[] => {
+    const childCategories = categories.filter(c => c.parentCategory === categoryId);
+    const childIds = childCategories.map(c => c.id);
+    
+    const grandChildIds = childCategories.flatMap(c => getChildCategoryIds(c.id));
+    
+    return [...childIds, ...grandChildIds];
+  };
+
   useEffect(() => {
     initializeSearchData();
     const data = getSearchData();
@@ -99,14 +108,16 @@ export default function Search() {
     setActiveSearchQuery('');
   };
 
-  const filteredByCategory = tasks.filter(
-    (task) =>
-      (!selectedCategory || task.category === selectedCategory) &&
+  const filteredByCategory = tasks.filter((task) => {
+    if (!selectedCategory) return true;
+    
+    const categoryIds = [selectedCategory, ...getChildCategoryIds(selectedCategory)];
+    return categoryIds.includes(task.category) &&
       task.price >= priceRange[0] &&
       task.price <= priceRange[1] &&
       task.date >= dateRange[0] &&
-      task.date <= dateRange[1],
-  );
+      task.date <= dateRange[1];
+  });
 
   const searchResults = activeSearchQuery.trim()
     ? searchTasks(activeSearchQuery, filteredByCategory)
