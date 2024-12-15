@@ -8,10 +8,21 @@ export interface Category {
 export interface Task {
   id: number;
   category: number;
+  authorId: number;
   title: string;
   content: string;
   date: string;
+  posted: string;
   price: number;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  avatar: string | null;
+  rating: number;
+  completedTasks: number;
+  joinedDate: string;
 }
 
 export interface SearchData {

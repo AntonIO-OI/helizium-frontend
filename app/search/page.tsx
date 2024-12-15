@@ -12,6 +12,7 @@ import SearchBar from '../components/search/SearchBar';
 import FilterControls from '../components/search/FilterControls';
 import LoadingState from '../components/search/LoadingState';
 import CategoryNavigation from '../components/search/CategoryNavigation';
+import { getChildCategoryIds } from '../utils/categories';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -49,15 +50,6 @@ export default function Search() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isTasksLoading, setIsTasksLoading] = useState(false);
-
-  const getChildCategoryIds = (categoryId: number): number[] => {
-    const childCategories = categories.filter(c => c.parentCategory === categoryId);
-    const childIds = childCategories.map(c => c.id);
-    
-    const grandChildIds = childCategories.flatMap(c => getChildCategoryIds(c.id));
-    
-    return [...childIds, ...grandChildIds];
-  };
 
   useEffect(() => {
     initializeSearchData();
