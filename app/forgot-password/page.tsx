@@ -16,8 +16,8 @@ export default function ForgotPassword() {
         placeholder="Enter your email address"
         required
       />
-      
-      <Captcha />
+
+      <Captcha path='/auth/lost-password/send-email' method='POST' />
 
       <button
         type="submit"
