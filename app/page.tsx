@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ChatModal from './components/ChatModal';
+import { saveTestUsers } from './data/mockUsers';
 
 export default function Home() {
   const [showScroll, setShowScroll] = useState(false);
@@ -22,6 +23,7 @@ export default function Home() {
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
+    saveTestUsers();
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };

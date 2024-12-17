@@ -26,12 +26,22 @@ export interface User {
   rating: number;
   completedTasks: number;
   joinedDate: string;
+  admin: boolean;
   bio?: string;
+}
+
+export interface Comment {
+  id: number,
+  userId: number,
+  taskId: number,
+  text: string,
+  createdAt: string,
 }
 
 export interface SearchData {
   categories: Category[];
   tasks: Task[];
+  comments: Comment[];
 }
 
 export type SortField = 'title' | 'date' | 'price';
@@ -40,4 +50,4 @@ export type SortDirection = 'asc' | 'desc';
 export interface SortConfig {
   field: SortField;
   direction: SortDirection;
-} 
+}

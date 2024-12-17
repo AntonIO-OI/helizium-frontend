@@ -7,6 +7,7 @@ import AuthLayout from '../components/AuthLayout';
 import { useEffect, useRef, useState } from 'react';
 import { User } from '../types/search';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '../utils/formatDate';
 
 const USERNAME_VALIDATOR_MESSAGE =
   'Username should be 4-30 characters long and contain only English letters, digits and underscores.';
@@ -72,14 +73,6 @@ export default function SignUp() {
     return null;
   };
 
-  function formatDate(date: Date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-    const year = date.getFullYear();
-
-    return `${day}.${month}.${year}`;
-  }
-
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -135,6 +128,7 @@ export default function SignUp() {
       rating: 0,
       completedTasks: 0,
       joinedDate: formatDate(new Date()),
+      admin: false,
     };
 
     users.push(newUser);
