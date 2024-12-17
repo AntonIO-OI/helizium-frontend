@@ -9,23 +9,28 @@ import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import TaskDetail from '@/app/components/task/TaskDetail';
 import { AlertCircle } from 'lucide-react';
+import ChatModal from '@/app/components/ChatModal';
 
-export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TaskPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const [task, setTask] = useState<Task | null>(null);
   const [author, setAuthor] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const resolvedParams = use(params);
 
   useEffect(() => {
     const fetchTask = async () => {
       setIsLoading(true);
-      await delay(400); 
-      
+      await delay(400);
+
       const taskId = parseInt(resolvedParams.id);
       const data = getSearchData();
-      const foundTask = data.tasks.find(t => t.id === taskId);
-      
+      const foundTask = data.tasks.find((t) => t.id === taskId);
+
       if (foundTask) {
         setTask(foundTask);
         const taskAuthor = getUser(foundTask.authorId);
@@ -33,7 +38,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
           setAuthor(taskAuthor);
         }
       }
-      
+
       setIsLoading(false);
     };
 
@@ -65,10 +70,11 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">Task Not Found</h1>
             <p className="text-gray-600 mb-8">
-              The task you&apos;re looking for doesn&apos;t exist or has been removed.
+              The task you&apos;re looking for doesn&apos;t exist or has been
+              removed.
             </p>
-            <a 
-              href="/search" 
+            <a
+              href="/search"
               className="inline-block bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
             >
               Browse Tasks
@@ -88,7 +94,8 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
           <TaskDetail task={task} author={author} />
         </div>
       </main>
+      <ChatModal />
       <Footer />
     </div>
   );
-} 
+}

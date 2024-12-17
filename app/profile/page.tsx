@@ -10,6 +10,7 @@ import ProfileStats from '../components/profile/ProfileStats';
 import ProfileInfo from '../components/ProfileInfo';
 import ProfileActions from '../components/profile/ProfileActions';
 import { User } from '../types/search';
+import ChatModal from '../components/ChatModal';
 
 export default function Profile() {
   const [userData, setUserData] = useState<User | null>(null);
@@ -42,7 +43,7 @@ export default function Profile() {
       );
 
       localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUserData(updatedUser); // Update the state with the new bio
+      setUserData(updatedUser);
     }
   };
 
@@ -78,6 +79,7 @@ export default function Profile() {
         </div>
       </main>
 
+      <ChatModal />
       <Footer />
     </div>
   );

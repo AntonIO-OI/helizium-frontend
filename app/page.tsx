@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ChatModal from './components/ChatModal';
 
 export default function Home() {
   const [showScroll, setShowScroll] = useState(false);
@@ -240,7 +241,7 @@ export default function Home() {
           ↑
         </button>
       )}
-
+      <ChatModal />
       <Footer />
     </div>
   );

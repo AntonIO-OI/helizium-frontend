@@ -9,4 +9,4 @@ export interface ProfileData {
   };
   bio: string;
   birthday: string;
-} 
+}
