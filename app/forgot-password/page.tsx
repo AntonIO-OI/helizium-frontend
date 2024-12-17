@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 import InputField from '../components/InputField';
 import Captcha from '../components/Captcha';

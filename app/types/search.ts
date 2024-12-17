@@ -18,11 +18,15 @@ export interface Task {
 
 export interface User {
   id: number;
+  email: string;
+  emailConfirmed: boolean;
+  password: string;
   username: string;
   avatar: string | null;
   rating: number;
   completedTasks: number;
   joinedDate: string;
+  bio?: string;
 }
 
 export interface SearchData {

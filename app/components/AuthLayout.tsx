@@ -22,12 +22,12 @@ export default function AuthLayout({ children, title, description }: AuthLayoutP
       </div>
 
       <div className="w-full lg:w-3/5 bg-white flex items-center justify-center p-4 sm:p-8 lg:p-12">
-        <form className="w-full max-w-lg bg-gray-50 shadow-lg rounded-lg p-6 sm:p-8">
+        <div className="w-full max-w-lg bg-gray-50 shadow-lg rounded-lg p-6 sm:p-8">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 lg:mb-8 text-center text-black">
             {title}
           </h2>
           {children}
-        </form>
+        </div>
       </div>
     </div>
   );

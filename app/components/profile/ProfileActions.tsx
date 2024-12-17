@@ -7,9 +7,17 @@ import {
   LucideMail,
   LucideLogOut
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import ProfileButton from './ProfileButton';
 
 export default function ProfileActions() {
+  const router = useRouter();
+
+  const logoutHandler = () => {
+    localStorage.removeItem('userId');
+    router.push('/');
+  }
+
   return (
     <div className="space-y-8">
       {/* Primary Actions */}
@@ -39,7 +47,7 @@ export default function ProfileActions() {
           label="Logout"
           variant="danger"
           icon={LucideLogOut}
-          onClick={() => {}}
+          onClick={logoutHandler}
           fullWidth
         />
       </div>
