@@ -16,6 +16,12 @@ export interface Task {
   price: number;
 }
 
+export interface ApiToken {
+  title: string;
+  token: string;
+  readonly: boolean;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -27,6 +33,9 @@ export interface User {
   completedTasks: number;
   joinedDate: string;
   admin: boolean;
+  mfa: boolean;
+  totp: boolean;
+  apiTokens?: ApiToken[];
   bio?: string;
 }
 

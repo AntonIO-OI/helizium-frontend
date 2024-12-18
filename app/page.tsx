@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import Header from './components/Header';
@@ -44,12 +44,16 @@ export default function Home() {
           you work and earn.
         </p>
         <div className="flex gap-6">
-          <button className="px-8 py-4 bg-black text-white rounded-lg shadow-lg hover:bg-gray-800 transition">
-            Get Started
-          </button>
-          <button className="px-8 py-4 bg-gray-200 text-black rounded-lg shadow-lg hover:bg-gray-300 transition">
-            Learn More
-          </button>
+          <a href="/signup">
+            <button className="px-8 py-4 bg-black text-white rounded-lg shadow-lg hover:bg-gray-800 transition">
+              Get Started
+            </button>
+          </a>
+          <a href="/signup">
+            <button className="px-8 py-4 bg-gray-200 text-black rounded-lg shadow-lg hover:bg-gray-300 transition">
+              Learn More
+            </button>
+          </a>
         </div>
       </main>
 

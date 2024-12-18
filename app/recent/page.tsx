@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import TaskItem from '../components/search/TaskItem';
 import LoadingState from '../components/search/LoadingState';
 import ChatModal from '../components/ChatModal';
+import Footer from '../components/Footer';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -118,6 +119,7 @@ export default function RecentTasks() {
         </div>
       </main>
       <ChatModal />
+      <Footer />
     </div>
   );
 }

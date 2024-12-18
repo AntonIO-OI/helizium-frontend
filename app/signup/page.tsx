@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { User } from '../types/search';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '../utils/formatDate';
+import { delay } from '../utils/storage';
 
 const USERNAME_VALIDATOR_MESSAGE =
   'Username should be 4-30 characters long and contain only English letters, digits and underscores.';
@@ -107,8 +108,6 @@ export default function SignUp() {
       (user: User) => user.username === username || user.email === email,
     );
 
-    alert(passwordError);
-
     if (userExists) {
       setUserExistsError('Username or email already exists.');
       return;
@@ -129,12 +128,16 @@ export default function SignUp() {
       completedTasks: 0,
       joinedDate: formatDate(new Date()),
       admin: false,
+      mfa: false,
+      totp: false,
     };
 
     users.push(newUser);
 
     localStorage.setItem('users', JSON.stringify(users));
     localStorage.setItem('userId', String(id));
+
+    await delay(400);
 
     router.push('/profile');
   };

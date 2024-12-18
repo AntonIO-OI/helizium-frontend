@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ export default function Profile() {
       const updatedUser = { ...userData, bio: newBio };
       const users = JSON.parse(localStorage.getItem('users') || '[]');
       const updatedUsers = users.map((user: User) =>
-        user.id === userData.id ? updatedUser : user
+        user.id === userData.id ? updatedUser : user,
       );
 
       localStorage.setItem('users', JSON.stringify(updatedUsers));
@@ -54,17 +54,26 @@ export default function Profile() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      
+
       <main className="flex-grow container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <ProfileSection>
-            <ProfileHeader 
+            <ProfileHeader
               username={userData.username}
               email={userData.email}
               isEmailConfirmed={userData.emailConfirmed}
             />
-            <ProfileStats stats={{completedTasks: 0, createdCategories: 0, createdTopics: 0}} />
-            <ProfileActions />
+            <ProfileStats
+              stats={{
+                completedTasks: 0,
+                createdCategories: 0,
+                createdTopics: 0,
+              }}
+            />
+            <ProfileActions
+              viewTopicsDisabled={true}
+              viewTakenDisabled={true}
+            />
           </ProfileSection>
 
           <ProfileSection>

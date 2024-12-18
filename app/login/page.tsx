@@ -5,6 +5,7 @@ import InputField from '../components/InputField';
 import AuthLayout from '../components/AuthLayout';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { delay } from '../utils/storage';
 
 export default function Login() {
   const [loginOrEmail, setLoginOrEmail] = useState('');
@@ -49,7 +50,7 @@ export default function Login() {
     return null;
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
     setPasswordError(null);
@@ -73,6 +74,13 @@ export default function Login() {
     }
 
     localStorage.setItem('userId', String(user.id));
+
+    await delay(400);
+
+    if (user.mfa) {
+      router.push('/mfa');
+      return;
+    }
 
     router.push('/profile');
   };

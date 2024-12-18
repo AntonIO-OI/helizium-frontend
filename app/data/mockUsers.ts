@@ -14,7 +14,9 @@ export const saveTestUsers = () => {
       email: 'AlexDev@gmail.com',
       emailConfirmed: true,
       password: 'asdf1234A!',
-      admin: true
+      admin: true,
+      mfa: false,
+      totp: false,
     },
     {
       id: 2,
@@ -27,6 +29,8 @@ export const saveTestUsers = () => {
       emailConfirmed: true,
       password: 'asdf1234A!',
       admin: true,
+      mfa: false,
+      totp: false,
     },
     {
       id: 3,
@@ -39,6 +43,8 @@ export const saveTestUsers = () => {
       emailConfirmed: true,
       password: 'asdf1234A!',
       admin: true,
+      mfa: false,
+      totp: false,
     },
   ];
 
@@ -66,6 +72,17 @@ export const getUser = (id: number): User | undefined => {
 
   return users.find((user) => user.id === id);
 };
+
+export const deleteUser = (id: number) => {
+  const usersFromLocalStorage = localStorage.getItem('users');
+
+  if (!usersFromLocalStorage) {
+    return undefined;
+  }
+
+  const users: User[] = JSON.parse(usersFromLocalStorage);
+  localStorage.setItem('users', JSON.stringify(users.filter((user) => user.id !== id)));
+}
 
 export const addUser = (user: User) => {
   const usersFromLocalStorage = localStorage.getItem('users');
