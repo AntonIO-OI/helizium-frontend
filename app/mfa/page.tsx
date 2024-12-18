@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import InputField from '../components/InputField';
 import AuthLayout from '../components/AuthLayout';
 import { useEffect, useState } from 'react';
@@ -14,6 +13,7 @@ export default function MFA() {
   const [emailCodeSent, setEmailCodeSent] = useState(false);
   const [emailCode, setEmailCode] = useState('');
   const [totpCode, setTotpCode] = useState('');
+  const [randomCode, setRandomCode] = useState('');
 
   const [toast, setToast] = useState<{
     message: string;
@@ -44,25 +44,66 @@ export default function MFA() {
     setEmail(user.email);
   }, [router, setTotpEnabled, setEmail]);
 
-  const handleSendEmailCode = () => {
-    setEmailCodeSent(true);
+  const generateRandomCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit random code
+  };
+
+  const handleSendEmailCode = async () => {
+    if (!email) {
+      setToast({ message: 'Email not found', type: 'error' });
+      return;
+    }
+
+    const code = generateRandomCode();
+    setRandomCode(code);
+
+    try {
+      const response = await fetch('/api/mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'maximax6767@gmail.com',
+          template: 'mfa.mail', // Update this to match your EmailTemplatesEnum
+          context: {
+            appName: 'Helizium',
+            otp: code,
+            username: email.split('@')[0], // Extract username from email
+            url: 'https://localhost:3001/profile?mfaToken=' + code,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      setEmailCodeSent(true);
+      setToast({ message: 'Email code sent successfully', type: '' });
+    } catch (error) {
+      console.error(error);
+      setToast({ message: 'Error sending email code', type: 'error' });
+    }
   };
 
   const handleMfaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (emailCodeSent && (!emailCode || emailCode.endsWith(' ')) && (!totpCode || totpCode.endsWith(' '))) {
+    if (
+      emailCodeSent &&
+      (!emailCode || emailCode !== randomCode) &&
+      (!totpCode || totpCode.endsWith(' '))
+    ) {
       setToast({ message: 'Invalid email code', type: 'error' });
       return;
     }
 
     if (!emailCodeSent && !totpEnabled) {
-      setToast({ message: 'You do not send confimation code', type: 'error' });
+      setToast({ message: 'You did not send the confirmation code', type: 'error' });
       return;
     }
 
     if (!emailCodeSent && (!totpCode || totpCode.endsWith(' '))) {
-      setToast({ message: 'Invalid totp code', type: 'error' });
+      setToast({ message: 'Invalid TOTP code', type: 'error' });
       return;
     }
 
