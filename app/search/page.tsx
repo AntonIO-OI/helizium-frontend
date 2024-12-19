@@ -6,13 +6,13 @@ import { getSearchData, initializeSearchData, delay } from '../utils/storage';
 import { searchTasks, sortTasks } from '../utils/search';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import TaskItem from '../components/search/TaskItem';
 import SortControls from '../components/search/SortControls';
 import SearchBar from '../components/search/SearchBar';
 import FilterControls from '../components/search/FilterControls';
 import LoadingState from '../components/search/LoadingState';
 import CategoryNavigation from '../components/search/CategoryNavigation';
 import { getChildCategoryIds } from '../utils/categories';
+import TaskList from '../components/task/TaskList';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -250,9 +250,7 @@ export default function Search() {
                 {isTasksLoading ? (
                   <LoadingState />
                 ) : paginatedResults.length > 0 ? (
-                  paginatedResults.map((task) => (
-                    <TaskItem key={task.id} task={task} />
-                  ))
+                  <TaskList tasks={paginatedResults} isLoading={isLoading} />
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     No tasks found matching your criteria

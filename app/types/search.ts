@@ -19,10 +19,14 @@ export interface Task {
 export interface User {
   id: number;
   username: string;
-  avatar: string | null;
   rating: number;
   completedTasks: number;
   joinedDate: string;
+  bio?: string;
+  location?: string;
+  email?: string;
+  industry?: string;
+  avatar?: string;
 }
 
 export interface SearchData {

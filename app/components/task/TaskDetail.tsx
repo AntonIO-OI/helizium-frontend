@@ -5,11 +5,12 @@ import {
   Calendar, 
   DollarSign, 
   Star, 
-  Award, 
   Clock, 
   ChevronRight,
+  ListTodo
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface TaskDetailProps {
   task: Task;
@@ -65,36 +66,46 @@ export default function TaskDetail({ task, author }: TaskDetailProps) {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg">
-              {author.username[0]}
-            </div>
-          </div>
-          
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold">{author.username}</h3>
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
-                Client
-              </span>
+        <div className="flex items-center justify-between">
+          <Link href={`/client/${author.id}`} className="flex items-center gap-4 group">
+            <div className="relative">
+              <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 transition">
+                {author.avatar ? (
+                  <Image src={author.avatar} alt={author.username} width={48} height={48} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  author.username[0]
+                )}
+              </div>
             </div>
             
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400" />
-                <span>{author.rating}</span>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold group-hover:text-gray-600 transition">{author.username}</h3>
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                  Client
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                <Award className="w-4 h-4 text-blue-500" />
-                <span>{authorTasks} tasks</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                <span>Since {new Date(author.joinedDate).getFullYear()}</span>
+              
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-400" />
+                  <span>{author.rating}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>Since {new Date(author.joinedDate).getFullYear()}</span>
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
+
+          <Link 
+            href={`/client/${author.id}/tasks`}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
+          >
+            <ListTodo className="w-4 h-4" />
+            <span>{authorTasks} tasks</span>
+          </Link>
         </div>
       </div>
 
