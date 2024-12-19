@@ -365,6 +365,14 @@ export default function ProfileActions({
           fullWidth
         />
         <ProfileButton
+          label="Create Category"
+          variant="primary"
+          icon={LucidePlus}
+          onClick={() => router.push('/category/create')}
+          disabled={!emailConfirmed}
+          fullWidth
+        />
+        <ProfileButton
           label="View Taken"
           variant="primary"
           icon={LucideEye}

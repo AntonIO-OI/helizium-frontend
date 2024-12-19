@@ -13,8 +13,14 @@ export default function WalletSection() {
 
   const fetchEthPrice = async () => {
     try {
-      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const response = await fetch('/api/eth-price');
+      if (!response.ok) {
+        throw new Error('Failed to fetch price');
+      }
       const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
       return data.ethereum.usd;
     } catch (err) {
       console.error('Failed to fetch ETH price:', err);

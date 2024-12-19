@@ -1,5 +1,5 @@
 import { saveTestUsers } from '../data/mockUsers';
-import { Comment, SearchData, Task } from '../types/search';
+import { Category, Comment, SearchData, Task } from '../types/search';
 import { TaskStatus } from '../types/search';
 
 export const delay = (ms: number) =>
@@ -955,3 +955,11 @@ export function saveComments(comments: Comment[]) {
     comments,
   }));
 }
+
+export const saveCategories = (categories: Category[]) => {
+  const data = getSearchData();
+  localStorage.setItem('searchData', JSON.stringify({
+    ...data,
+    categories
+  }));
+};
