@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import TaskList from '../components/task/TaskList';
 import ChatModal from '../components/ChatModal';
 import Footer from '../components/Footer';
+import Link from 'next/link';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -51,9 +52,17 @@ export default function RecentTasks() {
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-2xl font-bold">Recent Tasks</h1>
-            <span className="text-gray-500">
-              {tasks.length} tasks
-            </span>
+            <div className="flex items-center gap-4">
+              <span className="text-gray-500">
+                {tasks.length} tasks
+              </span>
+              <Link
+                href="/task/create"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+              >
+                Create Task
+              </Link>
+            </div>
           </div>
 
           <div className="mb-8">

@@ -58,6 +58,16 @@ export default function ClientTasksPage({ params }: { params: Promise<{ id: stri
     setIsLoading(false);
   };
 
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      const foundUser = getUser(parseInt(userId));
+      setCurrentUser(foundUser || null);
+    }
+  }, []);
+
   if (isClientChecked && !client) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -93,9 +103,19 @@ export default function ClientTasksPage({ params }: { params: Promise<{ id: stri
             {client && (
               <div className="flex justify-between items-center mt-4">
                 <h1 className="text-2xl font-bold">Tasks by {client.username}</h1>
-                <span className="text-gray-500">
-                  {tasks.length} tasks
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-500">
+                    {tasks.length} tasks
+                  </span>
+                  {currentUser?.id === parseInt(resolvedParams.id) && (
+                    <Link
+                      href="/task/create"
+                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                    >
+                      Create Task
+                    </Link>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ import {
   LucideMail,
   LucideLogOut,
   LucideTrash,
+  LucidePlus,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -353,6 +354,14 @@ export default function ProfileActions({
           icon={LucideEye}
           onClick={() => router.push('/profile/tasks/created')}
           disabled={viewTopicsDisabled}
+          fullWidth
+        />
+        <ProfileButton
+          label="Create Task"
+          variant="primary"
+          icon={LucidePlus}
+          onClick={() => router.push('/task/create')}
+          disabled={!emailConfirmed}
           fullWidth
         />
         <ProfileButton

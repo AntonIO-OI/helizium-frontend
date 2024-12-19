@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Task, User, TaskStatus } from '@/app/types/search';
 import { getChildCategoryIds } from '@/app/utils/categories';
 import { getSearchData } from '@/app/utils/storage';
-import { Calendar, DollarSign, Star, Clock, ChevronRight, XCircle, ArrowRight } from 'lucide-react';
+import { Calendar, DollarSign, Star, Clock, ChevronRight, XCircle, ArrowRight, Folder } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getUser } from '@/app/data/mockUsers';
@@ -100,7 +100,8 @@ export default function TaskDetail({
   const [showWorkForm, setShowWorkForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionForm, setShowRejectionForm] = useState(false);
-  const { tasks } = getSearchData();
+  const { tasks, categories } = getSearchData();
+  const category = categories.find(cat => cat.id === task.category);
 
   const approvedPerformer = currentTask.performerId
     ? getUser(currentTask.performerId)
@@ -209,6 +210,13 @@ export default function TaskDetail({
           <div className="flex items-center gap-2 text-gray-600">
             <Calendar className="w-5 h-5" />
             <span>Due date: {formatDate(task.date)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <span className="text-gray-300">•</span>
+            <div className="flex items-center gap-2">
+              <Folder className="w-4 h-4" />
+              <span>{category?.title || 'Uncategorized'}</span>
+            </div>
           </div>
         </div>
 
