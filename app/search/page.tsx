@@ -102,14 +102,11 @@ export default function Search() {
   };
 
   const filteredByCategory = tasks.filter((task) => {
-    if (!selectedCategory) return true;
+    const matchesCategory = !selectedCategory || [selectedCategory, ...getChildCategoryIds(selectedCategory)].includes(task.category);
+    const matchesPrice = task.price >= priceRange[0] && task.price <= priceRange[1];
+    const matchesDate = task.date >= dateRange[0] && task.date <= dateRange[1];
     
-    const categoryIds = [selectedCategory, ...getChildCategoryIds(selectedCategory)];
-    return categoryIds.includes(task.category) &&
-      task.price >= priceRange[0] &&
-      task.price <= priceRange[1] &&
-      task.date >= dateRange[0] &&
-      task.date <= dateRange[1];
+    return matchesCategory && matchesPrice && matchesDate;
   });
 
   const searchResults = activeSearchQuery.trim()
