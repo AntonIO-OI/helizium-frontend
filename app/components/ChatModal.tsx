@@ -13,7 +13,7 @@ export default function ChatModal() {
         setChatBotAccess(true);
       }
     }
-  });
+  }, [setChatBotAccess]);
 
   if (!chatBotAccessAllowed) {
     return null;

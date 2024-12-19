@@ -12,12 +12,13 @@ export default function MFA() {
   const [email, setEmail] = useState<string | null>(null);
   const [emailCodeSent, setEmailCodeSent] = useState(false);
   const [emailCode, setEmailCode] = useState('');
+  const [username, setUsername] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [randomCode, setRandomCode] = useState('');
 
   const [toast, setToast] = useState<{
     message: string;
-    type: 'error' | '';
+    type: 'error' | 'success' | '';
   }>({ message: '', type: '' });
 
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function MFA() {
     }
 
     setEmail(user.email);
+    setUsername(user.username);
   }, [router, setTotpEnabled, setEmail]);
 
   const generateRandomCode = () => {
@@ -62,13 +64,13 @@ export default function MFA() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: 'maximax6767@gmail.com',
-          template: 'mfa.mail', // Update this to match your EmailTemplatesEnum
+          to: email,
+          template: 'mfa.mail',
           context: {
             appName: 'Helizium',
             otp: code,
-            username: email.split('@')[0], // Extract username from email
-            url: 'https://localhost:3001/profile?mfaToken=' + code,
+            username,
+            url: 'http://localhost:3001/profile?mfaToken=' + code,
           },
         }),
       });
@@ -78,7 +80,7 @@ export default function MFA() {
       }
 
       setEmailCodeSent(true);
-      setToast({ message: 'Email code sent successfully', type: '' });
+      setToast({ message: 'Email code sent successfully', type: 'success' });
     } catch (error) {
       console.error(error);
       setToast({ message: 'Error sending email code', type: 'error' });

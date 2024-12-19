@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { User } from '../types/search';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '../utils/formatDate';
-import { delay } from '../utils/storage';
+import Toast from '../components/Toast';
 
 const USERNAME_VALIDATOR_MESSAGE =
   'Username should be 4-30 characters long and contain only English letters, digits and underscores.';
@@ -35,6 +35,11 @@ export default function SignUp() {
   const [userExistsError, setUserExistsError] = useState<string | null>(null);
 
   const captchaRef = useRef<CaptchaRef>(null);
+
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'error' | 'success' | '';
+  }>({ message: '', type: '' });
 
   const router = useRouter();
 
@@ -74,6 +79,10 @@ export default function SignUp() {
     return null;
   };
 
+  const generateRandomCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -81,12 +90,12 @@ export default function SignUp() {
     const captchaAnswer = captchaRef.current?.getCaptchaValue();
 
     if (!captchaId || !captchaAnswer) {
-      alert('Please complete the captcha');
+      setToast({ message: 'Please solve capthca', type: 'error' });
       return;
     }
 
     if (captchaAnswer.endsWith(' ')) {
-      alert('Invalid captcha');
+      setToast({ message: 'Invalid captcha', type: 'error' });
       captchaRef.current?.refreshCaptcha();
       return;
     }
@@ -137,7 +146,28 @@ export default function SignUp() {
     localStorage.setItem('users', JSON.stringify(users));
     localStorage.setItem('userId', String(id));
 
-    await delay(400);
+    try {
+      const code = generateRandomCode();
+      const response = await fetch('/api/mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          template: 'confirm.mail',
+          context: {
+            appName: 'Helizium',
+            otp: code,
+            username: username,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+    } catch (error) {
+      console.error(error);
+    }
 
     router.push('/profile');
   };
@@ -147,6 +177,13 @@ export default function SignUp() {
       title="Sign Up"
       description="Join Helizium and unlock the potential of secure, blockchain-powered freelancing."
     >
+      {toast.message && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ message: '', type: '' })}
+        />
+      )}
       <form onSubmit={signUp}>
         <InputField
           label="Username"
