@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { use } from 'react';
-import { Task, User } from '@/app/types/search';
+import { Task } from '@/app/types/search';
 import { getSearchData, delay } from '@/app/utils/storage';
 import { useRouter } from 'next/navigation';
 import TaskList from '@/app/components/task/TaskList';

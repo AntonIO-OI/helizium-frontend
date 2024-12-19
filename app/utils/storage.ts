@@ -1,6 +1,6 @@
+import { saveTestUsers } from '../data/mockUsers';
 import { Comment, SearchData, Task } from '../types/search';
 import { TaskStatus } from '../types/search';
-import { initializeUsers } from './auth';
 
 export const delay = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -25,7 +25,7 @@ export const isDataInitialized = () => {
 export const initializeSearchData = async () => {
   if (isDataInitialized()) return;
 
-  initializeUsers();
+  saveTestUsers();
 
   const initialData = {
     categories: [
