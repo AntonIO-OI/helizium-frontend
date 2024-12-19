@@ -3,6 +3,7 @@ export interface Category {
   parentCategory: number | null;
   title: string;
   description: string;
+  authorId: number;
 }
 
 export interface Task {

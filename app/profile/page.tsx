@@ -63,13 +63,7 @@ export default function Profile() {
               email={userData.email}
               isEmailConfirmed={userData.emailConfirmed}
             />
-            <ProfileStats
-              stats={{
-                completedTasks: 0,
-                createdCategories: 0,
-                createdTopics: 0,
-              }}
-            />
+            <ProfileStats userId={parseInt(localStorage.getItem('userId') || '0')} />
             <ProfileActions
               viewTopicsDisabled={true}
               viewTakenDisabled={true}

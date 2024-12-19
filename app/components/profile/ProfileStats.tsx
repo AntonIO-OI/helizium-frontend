@@ -1,4 +1,5 @@
-import { ProfileData } from '@/app/types/profile';
+import { useEffect, useState } from 'react';
+import { UserStats, calculateUserStats } from '@/app/utils/stats';
 
 interface StatItemProps {
   label: string;
@@ -15,10 +16,30 @@ function StatItem({ label, value }: StatItemProps) {
 }
 
 interface ProfileStatsProps {
-  stats: ProfileData['stats'];
+  userId: number;
 }
 
-export default function ProfileStats({ stats }: ProfileStatsProps) {
+export default function ProfileStats({ userId }: ProfileStatsProps) {
+  const [stats, setStats] = useState<UserStats>({
+    createdTopics: 0,
+    createdCategories: 0,
+    completedTasks: 0
+  });
+
+  useEffect(() => {
+    if (!userId) {
+      const storedUserId = localStorage.getItem('userId');
+      if (storedUserId) {
+        const userStats = calculateUserStats(parseInt(storedUserId));
+        setStats(userStats);
+      }
+      return;
+    }
+
+    const userStats = calculateUserStats(userId);
+    setStats(userStats);
+  }, [userId]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <StatItem label="Created Topics" value={stats.createdTopics} />

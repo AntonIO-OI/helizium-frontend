@@ -24,9 +24,9 @@ export const isDataInitialized = () => {
 
 export const initializeSearchData = async () => {
   if (isDataInitialized()) return;
-  
+
   initializeUsers();
-  
+
   const initialData = {
     categories: [
       // Level 1 - Root categories
@@ -35,12 +35,14 @@ export const initializeSearchData = async () => {
         parentCategory: null,
         title: 'Development',
         description: 'Software development tasks',
+        authorId: 1
       },
       {
         id: 2,
         parentCategory: null,
         title: 'Design',
         description: 'Design and creative tasks',
+        authorId: 2
       },
 
       // Level 2 - Development subcategories
@@ -49,12 +51,14 @@ export const initializeSearchData = async () => {
         parentCategory: 1,
         title: 'Web Development',
         description: 'Web development projects',
+        authorId: 1
       },
       {
         id: 4,
         parentCategory: 1,
         title: 'Mobile Development',
         description: 'Mobile app development',
+        authorId: 2
       },
 
       // Level 2 - Design subcategories
@@ -63,12 +67,14 @@ export const initializeSearchData = async () => {
         parentCategory: 2,
         title: 'UI Design',
         description: 'User interface design',
+        authorId: 2
       },
       {
         id: 6,
         parentCategory: 2,
         title: 'Graphics',
         description: 'Graphic design tasks',
+        authorId: 1
       },
 
       // Level 3 - Web Development subcategories
@@ -77,12 +83,14 @@ export const initializeSearchData = async () => {
         parentCategory: 3,
         title: 'Frontend',
         description: 'Frontend development',
+        authorId: 1
       },
       {
         id: 8,
         parentCategory: 3,
         title: 'Backend',
         description: 'Backend development',
+        authorId: 2
       },
 
       // Level 3 - Mobile Development subcategories
@@ -91,12 +99,14 @@ export const initializeSearchData = async () => {
         parentCategory: 4,
         title: 'iOS',
         description: 'iOS development',
+        authorId: 1
       },
       {
         id: 10,
         parentCategory: 4,
         title: 'Android',
         description: 'Android development',
+        authorId: 2
       },
 
       // Level 3 - UI Design subcategories
@@ -105,12 +115,14 @@ export const initializeSearchData = async () => {
         parentCategory: 5,
         title: 'Web UI',
         description: 'Web interface design',
+        authorId: 2
       },
       {
         id: 12,
         parentCategory: 5,
         title: 'Mobile UI',
         description: 'Mobile interface design',
+        authorId: 1
       },
 
       // Level 3 - Graphics subcategories
@@ -119,12 +131,14 @@ export const initializeSearchData = async () => {
         parentCategory: 6,
         title: 'Brand Design',
         description: 'Brand identity design',
+        authorId: 2
       },
       {
         id: 14,
         parentCategory: 6,
         title: 'Illustration',
         description: 'Digital illustration',
+        authorId: 1
       },
     ],
     tasks: [
@@ -143,7 +157,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 102,
@@ -159,7 +173,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 103,
@@ -175,7 +189,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Design (Level 1) Tasks
@@ -193,7 +207,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 105,
@@ -209,7 +223,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Web Development (Level 2) Tasks
@@ -227,7 +241,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 107,
@@ -243,7 +257,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 108,
@@ -259,7 +273,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Mobile Development (Level 2) Tasks
@@ -277,7 +291,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 110,
@@ -293,7 +307,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // UI Design (Level 2) Tasks
@@ -311,7 +325,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 112,
@@ -327,7 +341,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Graphics (Level 2) Tasks
@@ -345,7 +359,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 114,
@@ -361,7 +375,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Frontend (Level 3) Tasks
@@ -379,7 +393,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 116,
@@ -395,7 +409,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 117,
@@ -411,7 +425,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Backend (Level 3) Tasks
@@ -429,7 +443,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 119,
@@ -445,7 +459,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 120,
@@ -461,7 +475,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // iOS (Level 3) Tasks
@@ -479,7 +493,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 122,
@@ -495,7 +509,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Android (Level 3) Tasks
@@ -513,7 +527,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 124,
@@ -529,7 +543,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Web UI (Level 3) Tasks
@@ -547,7 +561,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 126,
@@ -563,7 +577,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Mobile UI (Level 3) Tasks
@@ -581,7 +595,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 128,
@@ -597,7 +611,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Brand Design (Level 3) Tasks
@@ -615,7 +629,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 130,
@@ -631,7 +645,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Illustration (Level 3) Tasks
@@ -649,7 +663,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 132,
@@ -665,7 +679,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
 
       // Additional Tasks
@@ -683,7 +697,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 134,
@@ -699,7 +713,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 135,
@@ -715,7 +729,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 136,
@@ -731,7 +745,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 137,
@@ -747,7 +761,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 138,
@@ -763,7 +777,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 139,
@@ -779,7 +793,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 140,
@@ -795,7 +809,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 141,
@@ -811,7 +825,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 142,
@@ -827,7 +841,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 143,
@@ -843,7 +857,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 144,
@@ -859,7 +873,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 145,
@@ -875,7 +889,7 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
       {
         id: 146,
@@ -891,10 +905,10 @@ export const initializeSearchData = async () => {
         performerId: null,
         workResult: null,
         completed: false,
-        status: TaskStatus.SEARCHING
+        status: TaskStatus.SEARCHING,
       },
     ],
-    comments: []
+    comments: [],
   };
 
   localStorage.setItem('searchData', JSON.stringify(initialData));
@@ -910,7 +924,7 @@ export function getSearchData(): SearchData {
   if (typeof window === 'undefined') {
     return { categories: [], tasks: [], comments: [] };
   }
-  
+
   const data = localStorage.getItem('searchData');
   if (!data) {
     initializeSearchData();
@@ -921,7 +935,7 @@ export function getSearchData(): SearchData {
 
 export function updateStorageData(updateFn: (data: SearchData) => SearchData) {
   if (typeof window === 'undefined') return;
-  
+
   const currentData = getSearchData();
   const updatedData = updateFn(currentData);
   localStorage.setItem('searchData', JSON.stringify(updatedData));
@@ -929,15 +943,15 @@ export function updateStorageData(updateFn: (data: SearchData) => SearchData) {
 }
 
 export function saveTasks(tasks: Task[]) {
-  return updateStorageData(data => ({
+  return updateStorageData((data) => ({
     ...data,
-    tasks
+    tasks,
   }));
 }
 
 export function saveComments(comments: Comment[]) {
-  return updateStorageData(data => ({
+  return updateStorageData((data) => ({
     ...data,
-    comments
+    comments,
   }));
 }

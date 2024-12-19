@@ -1,3 +1,6 @@
+import { User } from '../types/search';
+import { getSearchData } from './storage';
+
 export interface AuthUser {
   id: number;
   username: string;
@@ -15,31 +18,46 @@ export function initializeUsers() {
   const initialUsers: AuthUser[] = [
     {
       id: 1,
-      username: 'john_doe',
-      email: 'john@example.com',
-      password: 'password123',
+      username: 'AlexDev',
+      avatar: null,
       rating: 4.8,
-      completedTasks: 15,
-      joinDate: '2024-01-15'
+      completedTasks: 156,
+      joinedDate: '2023-01-15',
+      email: 'AlexDev@gmail.com',
+      emailConfirmed: true,
+      password: 'asdf1234A!',
+      admin: true,
+      mfa: false,
+      totp: false,
     },
     {
       id: 2,
-      username: 'jane_smith',
-      email: 'jane@example.com',
-      password: 'password123',
+      username: 'SarahDesigner',
+      avatar: null,
       rating: 4.9,
-      completedTasks: 23,
-      joinDate: '2024-01-10'
+      completedTasks: 243,
+      joinedDate: '2022-11-20',
+      email: 'SarahDesigner@gmail.com',
+      emailConfirmed: true,
+      password: 'asdf1234A!',
+      admin: true,
+      mfa: false,
+      totp: false,
     },
     {
       id: 3,
-      username: 'bob_wilson',
-      email: 'bob@example.com',
-      password: 'password123',
+      username: 'MikeCode',
+      avatar: null,
       rating: 4.7,
-      completedTasks: 18,
-      joinDate: '2024-01-20'
-    }
+      completedTasks: 89,
+      joinedDate: '2023-03-05',
+      email: 'MikeCode@gmail.com',
+      emailConfirmed: true,
+      password: 'asdf1234A!',
+      admin: true,
+      mfa: false,
+      totp: false,
+    },
   ];
 
   localStorage.setItem('users', JSON.stringify(initialUsers));
