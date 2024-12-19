@@ -7,9 +7,10 @@ import { AlertCircle } from 'lucide-react';
 interface TaskCreationFormProps {
   categories: Category[];
   authorId: number;
+  disabled?: boolean;
 }
 
-export default function TaskCreationForm({ categories, authorId }: TaskCreationFormProps) {
+export default function TaskCreationForm({ categories, authorId, disabled = false }: TaskCreationFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -25,6 +26,12 @@ export default function TaskCreationForm({ categories, authorId }: TaskCreationF
     setError('');
     setAiError('');
     setIsLoading(true);
+
+    if (disabled) {
+      setError('You are not allowed to create tasks at this time');
+      setIsLoading(false);
+      return;
+    }
 
     if (!title || !content || !category || !price || !date) {
       setError('Please fill in all fields');
@@ -172,7 +179,7 @@ export default function TaskCreationForm({ categories, authorId }: TaskCreationF
         </button>
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || disabled}
           className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Verifying...' : 'Create Task'}
