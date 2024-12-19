@@ -132,13 +132,13 @@ export default function SignUp() {
       password,
       emailConfirmed: false,
       id,
-      avatar: '',
       rating: 0,
       completedTasks: 0,
       joinedDate: formatDate(new Date()),
       admin: false,
       mfa: false,
       totp: false,
+      banned: false,
     };
 
     users.push(newUser);

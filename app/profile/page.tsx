@@ -47,6 +47,32 @@ export default function Profile() {
     }
   };
 
+  const handleIndustryEdit = (industry: string | undefined) => {
+    if (userData) {
+      const updatedUser = { ...userData, industry };
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map((user: User) =>
+        user.id === userData.id ? updatedUser : user,
+      );
+
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      setUserData(updatedUser);
+    }
+  };
+
+  const handleLocationEdit = (location: string | undefined) => {
+    if (userData) {
+      const updatedUser = { ...userData, location };
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map((user: User) =>
+        user.id === userData.id ? updatedUser : user,
+      );
+
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      setUserData(updatedUser);
+    }
+  };
+
   if (!userData) {
     return <div></div>;
   }
@@ -63,7 +89,7 @@ export default function Profile() {
               email={userData.email}
               isEmailConfirmed={userData.emailConfirmed}
             />
-            <ProfileStats userId={parseInt(localStorage.getItem('userId') || '0')} />
+            <ProfileStats userId={userData.id} />
             <ProfileActions
               viewTopicsDisabled={false}
               viewTakenDisabled={false}
@@ -77,6 +103,20 @@ export default function Profile() {
               isEditable={true}
               onDelete={() => handleBioEdit(undefined)}
               onEdit={handleBioEdit}
+            />
+            <ProfileInfo
+              label="Location"
+              value={userData.location || ''}
+              isEditable={true}
+              onDelete={() => handleLocationEdit(undefined)}
+              onEdit={handleLocationEdit}
+            />
+            <ProfileInfo
+              label="Industry"
+              value={userData.industry || ''}
+              isEditable={true}
+              onDelete={() => handleIndustryEdit(undefined)}
+              onEdit={handleIndustryEdit}
             />
           </ProfileSection>
         </div>
