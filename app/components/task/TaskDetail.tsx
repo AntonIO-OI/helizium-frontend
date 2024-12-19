@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Task, User, TaskStatus } from '@/app/types/search';
 import { getChildCategoryIds } from '@/app/utils/categories';
 import { getSearchData } from '@/app/utils/storage';
-import { Calendar, DollarSign, Star, Clock, ChevronRight } from 'lucide-react';
+import { Calendar, DollarSign, Star, Clock, ChevronRight, XCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getUser } from '@/app/data/mockUsers';
@@ -492,6 +492,27 @@ export default function TaskDetail({
             )}
           </div>
         )}
+
+      {currentUser?.id && currentTask.rejectedApplicants.includes(currentUser.id) && (
+        <div className="bg-white rounded-lg shadow-sm border border-red-100 p-6">
+          <div className="flex items-center gap-3 text-red-600 mb-4">
+            <XCircle className="w-5 h-5" />
+            <h2 className="text-xl font-semibold">Application Status</h2>
+          </div>
+          <p className="text-gray-600">
+            Your application for this task has been rejected. You can browse other available tasks.
+          </p>
+          <div className="mt-4">
+            <Link 
+              href="/recent" 
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Browse other tasks
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
