@@ -132,7 +132,7 @@ export default function WalletSection() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+    <div className="bg-white">
       <div className="flex items-center gap-3 mb-6">
         <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg">
           <Wallet className="w-5 h-5 text-white" />
