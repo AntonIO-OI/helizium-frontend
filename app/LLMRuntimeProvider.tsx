@@ -3,20 +3,27 @@
 import type { ReactNode } from 'react';
 import {
   AssistantRuntimeProvider,
+  ThreadMessage,
   useLocalRuntime,
   type ChatModelAdapter,
 } from '@assistant-ui/react';
+
+interface MessageContent {
+  text: string;
+}
 
 const MyModelAdapter: ChatModelAdapter = {
   async run({ messages, abortSignal }) {
     const webPageContent = getDynamicWebPageContent();
 
     const formattedMessages = [
-      { role: 'user', content: [{ type: 'text', text: webPageContent }]},
-      ...messages.map((message: any) => ({
+      { role: 'user', content: [{ type: 'text', text: webPageContent }] },
+      ...messages.map((message: ThreadMessage) => ({
         role: message.role || 'user',
         content:
-          message.role === 'user' ? message.content : message.content[0].text,
+          message.role === 'user'
+            ? message.content
+            : (message.content[0] as MessageContent).text,
       })),
     ];
 
@@ -41,7 +48,9 @@ const MyModelAdapter: ChatModelAdapter = {
       content: [
         {
           type: 'text',
-          text: data['choices'][data['choices'].length - 1]['message']['content'],
+          text: data['choices'][data['choices'].length - 1]['message'][
+            'content'
+          ],
         },
       ],
     };

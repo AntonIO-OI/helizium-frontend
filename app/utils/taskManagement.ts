@@ -1,4 +1,4 @@
-import { Task, User } from '../types/search';
+import { Task } from '../types/search';
 import { getSearchData, saveTasks } from './storage';
 import { updateTaskStatus } from './tasks';
 import { TaskStatus } from '../types/search';

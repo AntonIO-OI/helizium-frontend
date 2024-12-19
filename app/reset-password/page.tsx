@@ -1,9 +1,9 @@
 'use client';
 
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import InputField from '../components/InputField';
 import AuthLayout from '../components/AuthLayout';
-import { useEffect, useState } from 'react';
 import Toast from '../components/Toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User } from '../types/search';
@@ -15,7 +15,7 @@ const PASSWORD_VALIDATOR_MESSAGE =
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
 
-export default function ResetPassword() {
+function ResetPasswordContent() {
   const validatePassword = (value: string) => {
     if (!PASSWORD_REGEX.test(value)) {
       return PASSWORD_VALIDATOR_MESSAGE;
@@ -27,9 +27,11 @@ export default function ResetPassword() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
 
-  if (!email) {
-    router.push('/forgot-password');
-  }
+  useEffect(() => {
+    if (!email) {
+      router.push('/forgot-password');
+    }
+  }, [email, router]);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
@@ -159,5 +161,13 @@ export default function ResetPassword() {
         </Link>
       </p>
     </AuthLayout>
+  );
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
