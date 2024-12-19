@@ -370,7 +370,16 @@ export default function TaskDetail({
         (currentUser?.id === currentTask.authorId ||
           currentUser?.id === currentTask.performerId) && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <h2 className="text-xl font-semibold mb-4">Work Status</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Work Status</h2>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                  currentTask.status,
+                )}`}
+              >
+                {getStatusText(currentTask.status)}
+              </span>
+            </div>
 
             {currentTask.workResult && (
               <div className="mb-6">
@@ -385,9 +394,7 @@ export default function TaskDetail({
 
             {currentTask.rejectionMessage && (
               <div className="mb-6">
-                <h3 className="font-medium mb-2 text-red-600">
-                  Changes Requested:
-                </h3>
+                <h3 className="font-medium mb-2 text-red-600">Changes Requested:</h3>
                 <textarea
                   value={currentTask.rejectionMessage}
                   readOnly
@@ -396,61 +403,51 @@ export default function TaskDetail({
               </div>
             )}
 
-            <div className="flex justify-between items-center">
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                  currentTask.status,
-                )}`}
-              >
-                {getStatusText(currentTask.status)}
-              </span>
-
-              {currentUser?.id === currentTask.authorId &&
-                currentTask.status === TaskStatus.WAITING_APPROVAL && (
-                  <div className="flex gap-2">
-                    {showRejectionForm ? (
-                      <div className="space-y-4 w-full">
-                        <textarea
-                          value={rejectionReason}
-                          onChange={(e) => setRejectionReason(e.target.value)}
-                          className="w-full h-32 p-3 border rounded-lg"
-                          placeholder="Please explain why you're rejecting this work..."
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={handleRejectWork}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            disabled={!rejectionReason.trim()}
-                          >
-                            Reject Work
-                          </button>
-                          <button
-                            onClick={() => setShowRejectionForm(false)}
-                            className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
+            {currentUser?.id === currentTask.authorId &&
+              currentTask.status === TaskStatus.WAITING_APPROVAL && (
+                <div className="space-y-4">
+                  {showRejectionForm ? (
+                    <div className="space-y-4">
+                      <textarea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-300"
+                        placeholder="Please explain why you're rejecting this work..."
+                      />
+                      <div className="flex flex-col gap-2">
                         <button
-                          onClick={handleCompleteTask}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        >
-                          Approve and Complete Task
-                        </button>
-                        <button
-                          onClick={() => setShowRejectionForm(true)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                          onClick={handleRejectWork}
+                          className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!rejectionReason.trim()}
                         >
                           Request Changes
                         </button>
+                        <button
+                          onClick={() => setShowRejectionForm(false)}
+                          className="w-full py-2 border rounded-lg hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    )}
-                  </div>
-                )}
-            </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={handleCompleteTask}
+                        className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Approve and Complete Task
+                      </button>
+                      <button
+                        onClick={() => setShowRejectionForm(true)}
+                        className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      >
+                        Request Changes
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
         )}
 
