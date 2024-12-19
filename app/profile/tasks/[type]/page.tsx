@@ -70,9 +70,9 @@ export default function TasksPage({ params }: { params: Promise<{ type: string }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-4xl mx-auto">
           <Link href="/profile" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
             <ChevronLeft className="w-4 h-4 mr-1" />
