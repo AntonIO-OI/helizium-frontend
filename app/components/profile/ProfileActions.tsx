@@ -58,6 +58,9 @@ export default function ProfileActions({
   const [totpSecret, setTotpSecret] = useState('');
   const [totpInput, setTotpInput] = useState('');
 
+  const [isConfirmEmailModalOpen, setConfirmEmailModalOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+
   const validatePassword = (value: string) => {
     const PASSWORD_REGEX =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
@@ -111,6 +114,13 @@ export default function ProfileActions({
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
   const [tokenName, setTokenName] = useState('');
   const [isReadonly, setIsReadonly] = useState(false);
+
+  const [isMailSent, setIsMailSent] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+
+  const generateRandomCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
   const generateToken = () => {
     if (tokenName.length < 3) {
@@ -219,6 +229,9 @@ export default function ProfileActions({
   const openDeleteModal = () => setDeleteModalOpen(true);
   const closeDeleteModal = () => setDeleteModalOpen(false);
 
+  const openConfirmEmailModal = () => setConfirmEmailModalOpen(true);
+  const closeConfirmEmailModal = () => setConfirmEmailModalOpen(false);
+
   const openChangePasswordModal = () => setChangePasswordOpen(true);
   const closeChangePasswordModal = () => setChangePasswordOpen(false);
 
@@ -228,6 +241,62 @@ export default function ProfileActions({
     const userIndex = users.findIndex((user) => user.id === updatedUser.id);
     users[userIndex] = updatedUser;
     localStorage.setItem('users', JSON.stringify(users));
+  };
+
+  const sendMail = async () => {
+    const user = fetchUser();
+    const code = generateRandomCode();
+
+    try {
+      const response = await fetch('/api/mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: user.email,
+          template: 'confirm.mail',
+          context: {
+            appName: 'Helizium',
+            otp: code,
+            username: user.username,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      setIsMailSent(true);
+      setEmailCode(code);
+      setToast({ message: 'Email code sent successfully', type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setToast({ message: 'Error sending email code', type: 'error' });
+    }
+  };
+
+  const confirmEmail = () => {
+    if (!emailInput) {
+      setToast({
+        message: 'Enter email code',
+        type: 'error',
+      });
+      return;
+    }
+
+    if (emailInput.endsWith(' ') || (emailCode && emailInput !== emailCode)) {
+      setToast({
+        message: 'Invlid email code',
+        type: 'error',
+      });
+      return;
+    }
+
+    const user = fetchUser();
+    user.emailConfirmed = true;
+    saveUserData(user);
+    setEmailConfirmed(true);
+    router.push('/confirm-email?code=' + emailCode);
   };
 
   const openTotpModal = () => {
@@ -308,7 +377,7 @@ export default function ProfileActions({
             label="Confirm Email"
             variant="success"
             icon={LucideMail}
-            onClick={() => {}}
+            onClick={openConfirmEmailModal}
             fullWidth
           />
         )}
@@ -547,6 +616,43 @@ export default function ProfileActions({
               <button
                 className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
                 onClick={closeTotpModal}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isConfirmEmailModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
+            <h2 className="text-lg font-bold">Confirm email</h2>
+            <p>Enter code we send you by email:</p>
+            <InputField
+              id="totpInput"
+              type="text"
+              placeholder="Email code"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+            />
+            {isMailSent ? (
+              <p className="text-blue-600">We sent another mail</p>
+            ) : (
+              <a href="#" className="text-blue-600" onClick={sendMail}>
+                Resend code
+              </a>
+            )}
+            <div className="flex space-x-4">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={confirmEmail}
+              >
+                Confirm email
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
+                onClick={closeConfirmEmailModal}
               >
                 Cancel
               </button>

@@ -74,7 +74,7 @@ export default function TaskPage({
       userId: currentUser.id,
       taskId: task!.id,
       text: commentText,
-      createdAt: formatDate(new Date()),
+      createdAt: formatDate(new Date(), true),
     };
 
     saveComments([...comments, newComment]);
@@ -177,9 +177,7 @@ export default function TaskPage({
                             }
                           >
                             {commentAuthor.username}
-                            {commentAuthor.id === currentUser?.id
-                              ? ' (You)'
-                              : commentAuthor.id === author.id
+                            {commentAuthor.id === author.id
                               ? ' (Author)'
                               : null}
                           </span>
