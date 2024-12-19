@@ -107,9 +107,6 @@ export default function ClientPage({ params }: { params: Promise<{ id: string }>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-4">
                   <h1 className="text-3xl font-bold">{client.username}</h1>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    Client
-                  </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="flex items-center gap-2 text-gray-600">
@@ -126,7 +123,7 @@ export default function ClientPage({ params }: { params: Promise<{ id: string }>
                   </div>
                 </div>
                 <p className="text-gray-600 text-lg leading-relaxed">
-                  {client.bio || "This client hasn't added a bio yet."}
+                  {client.bio || "This user hasn't added a bio yet."}
                 </p>
               </div>
             </div>

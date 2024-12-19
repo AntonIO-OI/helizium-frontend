@@ -5,7 +5,7 @@ interface TaskItemProps {
   task: Task;
 }
 
-const getStatusColor = (status: TaskStatus) => {
+export const getStatusColor = (status: TaskStatus) => {
   switch (status) {
     case TaskStatus.SEARCHING:
       return 'bg-blue-100 text-blue-800';
@@ -18,7 +18,7 @@ const getStatusColor = (status: TaskStatus) => {
   }
 };
 
-const getStatusText = (status: TaskStatus) => {
+export const getStatusText = (status: TaskStatus) => {
   switch (status) {
     case TaskStatus.SEARCHING:
       return 'Searching Freelancer';

@@ -8,12 +8,13 @@ import {
   Star, 
   Clock, 
   ChevronRight,
-  ListTodo
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getUser } from '@/app/data/mockUsers';
 import { applyForTask, rejectApplicant, approveApplicant, submitWorkResult, completeTask, rejectWorkResult } from '@/app/utils/taskManagement';
+import { getStatusText } from '../search/TaskItem';
+import { getStatusColor } from '../search/TaskItem';
 
 interface TaskDetailProps {
   task: Task;
@@ -87,6 +88,8 @@ export default function TaskDetail({ task, author, currentUser }: TaskDetailProp
   const { tasks } = getSearchData();
   const authorTasks = tasks.filter(t => t.authorId === author.id).length;
   
+  const approvedPerformer = currentTask.performerId ? getUser(currentTask.performerId) : null;
+  
   const relatedCategoryIds = [task.category, ...getChildCategoryIds(task.category)];
   
   const similarTasks = tasks
@@ -156,10 +159,15 @@ export default function TaskDetail({ task, author, currentUser }: TaskDetailProp
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
-        <div className="flex items-center gap-3 text-sm text-gray-600 mb-6">
-          <span>Task #{task.id}</span>
-          <ChevronRight className="w-4 h-4" />
-          <span>Posted {formatDate(task.posted)}</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            <span>Task #{task.id}</span>
+            <ChevronRight className="w-4 h-4" />
+            <span>Posted {formatDate(task.posted)}</span>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(currentTask.status)}`}>
+            {getStatusText(currentTask.status)}
+          </span>
         </div>
         
         <h1 className="text-2xl md:text-3xl font-bold mb-4">{task.title}</h1>
@@ -180,8 +188,8 @@ export default function TaskDetail({ task, author, currentUser }: TaskDetailProp
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 divide-y divide-gray-100">
+        <div className="p-6">
           <Link href={`/client/${author.id}`} className="flex items-center gap-4 group">
             <div className="relative">
               <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 transition">
@@ -213,16 +221,76 @@ export default function TaskDetail({ task, author, currentUser }: TaskDetailProp
               </div>
             </div>
           </Link>
-
-          <Link 
-            href={`/client/${author.id}/tasks`}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
-          >
-            <ListTodo className="w-4 h-4" />
-            <span>{authorTasks} tasks</span>
-          </Link>
         </div>
+
+        {approvedPerformer && (
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <Link href={`/client/${approvedPerformer.id}`} className="flex items-center gap-4 group">
+                <div className="w-12 h-12 bg-gray-800 text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-700 transition">
+                  {approvedPerformer.avatar ? (
+                    <Image 
+                      src={approvedPerformer.avatar} 
+                      alt={approvedPerformer.username} 
+                      width={48} 
+                      height={48} 
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    approvedPerformer.username[0]
+                  )}
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold group-hover:text-gray-600 transition">
+                      {approvedPerformer.username}
+                    </h3>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
+                      Freelancer
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-yellow-400" />
+                      <span>{approvedPerformer.rating}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>Since {new Date(approvedPerformer.joinedDate).getFullYear()}</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
+
+      {!approvedPerformer && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h2 className="text-xl font-semibold mb-4">Applications</h2>
+          
+          {canApply ? (
+            <button
+              onClick={handleApply}
+              className="w-full py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+            >
+              Apply for this task
+            </button>
+          ) : currentTask.applicants.length > 0 ? (
+            <ApplicantList
+              task={currentTask}
+              currentUser={currentUser}
+              onReject={handleReject}
+              onApprove={handleApprove}
+            />
+          ) : (
+            <p className="text-gray-500">No applications yet</p>
+          )}
+        </div>
+      )}
 
       {similarTasks.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
@@ -249,28 +317,6 @@ export default function TaskDetail({ task, author, currentUser }: TaskDetailProp
           </div>
         </div>
       )}
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-        <h2 className="text-xl font-semibold mb-4">Applications</h2>
-        
-        {canApply ? (
-          <button
-            onClick={handleApply}
-            className="w-full py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
-          >
-            Apply for this task
-          </button>
-        ) : currentTask.applicants.length > 0 ? (
-          <ApplicantList
-            task={currentTask}
-            currentUser={currentUser}
-            onReject={handleReject}
-            onApprove={handleApprove}
-          />
-        ) : (
-          <p className="text-gray-500">No applications yet</p>
-        )}
-      </div>
 
       {currentTask.performerId === currentUser?.id && 
        currentTask.status === TaskStatus.IN_PROGRESS && (
