@@ -1,11 +1,31 @@
+'use client';
+
 import Link from 'next/link';
 import InputField from '../components/InputField';
 import Captcha from '../components/Captcha';
 import AuthLayout from '../components/AuthLayout';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function ForgotPassword() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      return;
+    }
+
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find((user: { id: number }) => user.id === +userId);
+
+    if (user) {
+      router.push('/profile');
+    }
+  }, [router]);
+
   return (
-    <AuthLayout 
+    <AuthLayout
       title="Forgot Password"
       description="Recover access to your Helizium account by resetting your password."
     >
@@ -16,8 +36,8 @@ export default function ForgotPassword() {
         placeholder="Enter your email address"
         required
       />
-      
-      <Captcha />
+
+      <Captcha path="/auth/lost-password/send-email" method="POST" />
 
       <button
         type="submit"
@@ -26,11 +46,14 @@ export default function ForgotPassword() {
         Send Reset Link
       </button>
       <p className="text-center mt-4">
-        Remember your password?{" "}
-        <Link href="/login" className="text-black font-semibold hover:underline">
+        Remember your password?{' '}
+        <Link
+          href="/login"
+          className="text-black font-semibold hover:underline"
+        >
           Sign In
         </Link>
       </p>
     </AuthLayout>
   );
-} 
+}

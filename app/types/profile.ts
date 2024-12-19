@@ -8,5 +8,4 @@ export interface ProfileData {
     completedTasks: number;
   };
   bio: string;
-  birthday: string;
-} 
+}

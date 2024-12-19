@@ -13,6 +13,7 @@ import LoadingState from '../components/search/LoadingState';
 import CategoryNavigation from '../components/search/CategoryNavigation';
 import { getChildCategoryIds } from '../utils/categories';
 import TaskList from '../components/task/TaskList';
+import ChatModal from '../components/ChatModal';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -306,7 +307,7 @@ export default function Search() {
           </div>
         </div>
       </main>
-
+      <ChatModal />
       <Footer />
     </div>
   );
