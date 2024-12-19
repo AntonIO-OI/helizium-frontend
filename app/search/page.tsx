@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Category, Task, SortConfig } from '../types/search';
-import { getSearchData, initializeSearchData, delay } from '../utils/storage';
+import { getSearchData, initializeSearchData, delay, isDataInitialized } from '../utils/storage';
 import { searchTasks, sortTasks } from '../utils/search';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -53,26 +53,33 @@ export default function Search() {
   const [isTasksLoading, setIsTasksLoading] = useState(false);
 
   useEffect(() => {
-    initializeSearchData();
-    const data = getSearchData();
-    setCategories(data.categories);
-    setTasks(data.tasks);
+    const loadSearchData = async () => {
+      if (!isDataInitialized()) {
+        await initializeSearchData();
+      }
+      
+      const data = getSearchData();
+      setCategories(data.categories);
+      setTasks(data.tasks);
 
-    const prices = data.tasks.map((task) => task.price);
-    const minPrice = prices.length ? Math.min(...prices) : 0;
-    const maxPrice = prices.length ? Math.max(...prices) : 5000;
-    setPriceRange([minPrice, maxPrice]);
+      const prices = data.tasks.map((task) => task.price);
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 5000;
+      setPriceRange([minPrice, maxPrice]);
 
-    const dates = data.tasks.map((task) => task.date);
-    const earliestDate = dates.length
-      ? dates.reduce((a, b) => (a < b ? a : b))
-      : '2024-03-20';
-    const latestDate = dates.length
-      ? dates.reduce((a, b) => (a > b ? a : b))
-      : '2024-04-06';
-    setDateRange([earliestDate, latestDate]);
+      const dates = data.tasks.map((task) => task.date);
+      const earliestDate = dates.length
+        ? dates.reduce((a, b) => (a < b ? a : b))
+        : '2024-03-20';
+      const latestDate = dates.length
+        ? dates.reduce((a, b) => (a > b ? a : b))
+        : '2024-04-06';
+      setDateRange([earliestDate, latestDate]);
 
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    loadSearchData();
   }, []);
 
   const priceRangeStart = priceRange[0];

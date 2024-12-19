@@ -14,6 +14,20 @@ export interface Task {
   date: string;
   posted: string;
   price: number;
+  applicants: number[];
+  rejectedApplicants: number[];
+  performerId: number | null;
+  workResult: string | null;
+  completed: boolean;
+  status: TaskStatus;
+  rejectionMessage: string | null;
+}
+
+export enum TaskStatus {
+  SEARCHING = 'searching',
+  IN_PROGRESS = 'in_progress',
+  WAITING_APPROVAL = 'waiting_approval',
+  COMPLETED = 'completed'
 }
 
 export interface ApiToken {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { use } from 'react';
 import { Task, User, Comment } from '@/app/types/search';
-import { getSearchData, delay, saveComments } from '@/app/utils/storage';
+import { getSearchData, delay, saveComments, saveTasks } from '@/app/utils/storage';
 import { getUser } from '@/app/data/mockUsers';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
@@ -88,6 +88,15 @@ export default function TaskPage({
     );
   };
 
+  const handleTaskUpdate = (updatedTask: Task) => {
+    setTask(updatedTask);
+    const data = getSearchData();
+    const updatedTasks = data.tasks.map(t => 
+      t.id === updatedTask.id ? updatedTask : t
+    );
+    saveTasks(updatedTasks);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -134,7 +143,7 @@ export default function TaskPage({
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <TaskDetail task={task} author={author} />
+          <TaskDetail task={task} author={author} currentUser={currentUser} />
 
           {/* Comments List */}
           <div className="mt-8">
