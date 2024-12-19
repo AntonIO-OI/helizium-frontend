@@ -15,7 +15,7 @@ import { getChildCategoryIds } from '../utils/categories';
 import TaskList from '../components/task/TaskList';
 import ChatModal from '../components/ChatModal';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 const getPageNumbers = (currentPage: number, totalPages: number) => {
   const delta = 2; 
