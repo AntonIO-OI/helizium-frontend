@@ -351,7 +351,7 @@ export default function ProfileActions({
           label="View Topics"
           variant="primary"
           icon={LucideEye}
-          onClick={() => {}}
+          onClick={() => router.push('/profile/tasks/created')}
           disabled={viewTopicsDisabled}
           fullWidth
         />
@@ -359,7 +359,7 @@ export default function ProfileActions({
           label="View Taken"
           variant="primary"
           icon={LucideEye}
-          onClick={() => {}}
+          onClick={() => router.push('/profile/tasks/taken')}
           disabled={viewTakenDisabled}
           fullWidth
         />

@@ -65,8 +65,8 @@ export default function Profile() {
             />
             <ProfileStats userId={parseInt(localStorage.getItem('userId') || '0')} />
             <ProfileActions
-              viewTopicsDisabled={true}
-              viewTakenDisabled={true}
+              viewTopicsDisabled={false}
+              viewTakenDisabled={false}
             />
           </ProfileSection>
 
