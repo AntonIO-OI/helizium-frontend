@@ -11,6 +11,7 @@ import ProfileInfo from '../components/ProfileInfo';
 import ProfileActions from '../components/profile/ProfileActions';
 import { User } from '../types/search';
 import ChatModal from '../components/ChatModal';
+import WalletSection from '../components/profile/WalletSection';
 
 export default function Profile() {
   const [userData, setUserData] = useState<User | null>(null);
@@ -118,6 +119,10 @@ export default function Profile() {
               onDelete={() => handleIndustryEdit(undefined)}
               onEdit={handleIndustryEdit}
             />
+          </ProfileSection>
+
+          <ProfileSection>
+            <WalletSection />
           </ProfileSection>
         </div>
       </main>
