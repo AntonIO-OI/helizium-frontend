@@ -47,10 +47,13 @@ export interface User {
   completedTasks: number;
   joinedDate: string;
   admin: boolean;
+  banned: boolean;
   mfa: boolean;
   totp: boolean;
   apiTokens?: ApiToken[];
   bio?: string;
+  industry?: string;
+  location?: string;
 }
 
 export interface Comment {

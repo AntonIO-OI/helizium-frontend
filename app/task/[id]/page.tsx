@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { use } from 'react';
 import { Task, User, Comment } from '@/app/types/search';
-import { getSearchData, delay, saveComments, saveTasks } from '@/app/utils/storage';
+import { getSearchData, delay, saveComments } from '@/app/utils/storage';
 import { getUser } from '@/app/data/mockUsers';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
@@ -79,6 +79,7 @@ export default function TaskPage({
 
     saveComments([...comments, newComment]);
     setComments((prevComments) => [...prevComments, newComment]);
+    setCommentText('');
   };
 
   const handleDeleteComment = (commentId: number) => {
@@ -86,15 +87,6 @@ export default function TaskPage({
     setComments((prevComments) =>
       prevComments.filter((comment) => comment.id !== commentId),
     );
-  };
-
-  const handleTaskUpdate = (updatedTask: Task) => {
-    setTask(updatedTask);
-    const data = getSearchData();
-    const updatedTasks = data.tasks.map(t => 
-      t.id === updatedTask.id ? updatedTask : t
-    );
-    saveTasks(updatedTasks);
   };
 
   if (isLoading) {
@@ -215,6 +207,7 @@ export default function TaskPage({
                   placeholder="Write your comment..."
                   className="w-full p-4 border border-gray-300 rounded-lg mb-4"
                   rows={4}
+                  value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                 ></textarea>
                 <button

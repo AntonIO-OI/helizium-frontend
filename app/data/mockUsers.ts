@@ -16,6 +16,7 @@ export const saveTestUsers = () => {
       admin: true,
       mfa: false,
       totp: false,
+      banned: false,
     },
     {
       id: 2,
@@ -29,6 +30,7 @@ export const saveTestUsers = () => {
       admin: true,
       mfa: false,
       totp: false,
+      banned: false,
     },
     {
       id: 3,
@@ -42,6 +44,7 @@ export const saveTestUsers = () => {
       admin: true,
       mfa: false,
       totp: false,
+      banned: false,
     },
   ];
 
