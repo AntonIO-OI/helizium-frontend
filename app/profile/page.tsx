@@ -12,7 +12,7 @@ import ProfileActions from '../components/profile/ProfileActions';
 import { User } from '../types/search';
 import ChatModal from '../components/ChatModal';
 import WalletSection from '../components/profile/WalletSection';
-import { Shield } from 'lucide-react';
+import { FolderCog, Shield } from 'lucide-react';
 
 export default function Profile() {
   const [userData, setUserData] = useState<User | null>(null);
@@ -128,17 +128,24 @@ export default function Profile() {
 
           {userData?.admin && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-purple-600" />
-                  <h2 className="text-xl font-semibold">Admin Tools</h2>
-                </div>
+              <div className="flex items-center gap-2 mb-6">
+                <Shield className="w-5 h-5 text-purple-600" />
+                <h2 className="text-xl font-semibold">Admin Tools</h2>
+              </div>
+              <div className="flex gap-4">
                 <button
                   onClick={() => router.push('/reports')}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   View Reports
+                </button>
+                <button
+                  onClick={() => router.push('/categories/manage')}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                >
+                  <FolderCog className="w-4 h-4" />
+                  Manage Categories
                 </button>
               </div>
             </div>
