@@ -2,6 +2,7 @@ import { Task } from '../types/search';
 import { getSearchData, saveTasks } from './storage';
 import { updateTaskStatus } from './tasks';
 import { TaskStatus } from '../types/search';
+import { getUser } from '../data/mockUsers';
 
 export function applyForTask(taskId: number, userId: number): Task | null {
   const { tasks } = getSearchData();
@@ -135,14 +136,16 @@ export function completeTask(taskId: number, authorId: number): Task | null {
   saveTasks(updatedTasks);
   return updatedTask;
 }
-
-export function deleteTask(taskId: number, authorId: number): boolean {
+export function deleteTask(taskId: number, currentUserId: number): boolean {
   const { tasks } = getSearchData();
   const task = tasks.find(t => t.id === taskId);
+  const currentUser = getUser(currentUserId);
   
-  if (!task || 
-      task.authorId !== authorId || 
-      task.status !== TaskStatus.SEARCHING) {
+  if (!task || (!currentUser?.admin && task.authorId !== currentUserId)) {
+    return false;
+  }
+
+  if (task.status !== TaskStatus.SEARCHING) {
     return false;
   }
 
