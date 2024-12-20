@@ -134,4 +134,19 @@ export function completeTask(taskId: number, authorId: number): Task | null {
 
   saveTasks(updatedTasks);
   return updatedTask;
+}
+
+export function deleteTask(taskId: number, authorId: number): boolean {
+  const { tasks } = getSearchData();
+  const task = tasks.find(t => t.id === taskId);
+  
+  if (!task || 
+      task.authorId !== authorId || 
+      task.status !== TaskStatus.SEARCHING) {
+    return false;
+  }
+
+  const updatedTasks = tasks.filter(t => t.id !== taskId);
+  saveTasks(updatedTasks);
+  return true;
 } 

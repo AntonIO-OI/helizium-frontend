@@ -13,9 +13,11 @@ import {
   submitWorkResult,
   completeTask,
   rejectWorkResult,
+  deleteTask,
 } from '@/app/utils/taskManagement';
 import { getStatusText } from '../search/TaskItem';
 import { getStatusColor } from '../search/TaskItem';
+import { useRouter } from 'next/navigation';
 
 interface TaskDetailProps {
   task: Task;
@@ -102,6 +104,7 @@ export default function TaskDetail({
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const { tasks, categories } = getSearchData();
   const category = categories.find(cat => cat.id === task.category);
+  const router = useRouter();
 
   const approvedPerformer = currentTask.performerId
     ? getUser(currentTask.performerId)
@@ -174,6 +177,14 @@ export default function TaskDetail({
     }
   };
 
+  const handleDeleteTask = () => {
+    if (!currentUser) return;
+    const success = deleteTask(task.id, currentUser.id);
+    if (success) {
+      router.push('/recent');
+    }
+  };
+
   const canApply =
     currentUser &&
     currentUser.id !== author.id &&
@@ -191,13 +202,23 @@ export default function TaskDetail({
             <ChevronRight className="w-4 h-4" />
             <span>Posted {formatDate(task.posted)}</span>
           </div>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-              currentTask.status,
-            )}`}
-          >
-            {getStatusText(currentTask.status)}
-          </span>
+          <div className="flex items-center gap-4">
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                currentTask.status,
+              )}`}
+            >
+              {getStatusText(currentTask.status)}
+            </span>
+            {currentUser?.id === task.authorId && currentTask.status === TaskStatus.SEARCHING && (
+              <button
+                onClick={handleDeleteTask}
+                className="px-3 py-1 text-red-600 border border-red-200 rounded hover:bg-red-50"
+              >
+                Delete Task
+              </button>
+            )}
+          </div>
         </div>
 
         <h1 className="text-2xl md:text-3xl font-bold mb-4">{task.title}</h1>
