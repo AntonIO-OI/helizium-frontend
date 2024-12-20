@@ -205,6 +205,11 @@ export default function TaskDetail({
     !currentTask.performerId &&
     currentTask.status === TaskStatus.SEARCHING;
 
+  const canManageTask = currentUser && (
+    currentUser.id === task.authorId || 
+    currentUser.admin
+  );
+
   return (
     <div className="space-y-6">
       {isEditing ? (
@@ -235,7 +240,7 @@ export default function TaskDetail({
               >
                 {getStatusText(currentTask.status)}
               </span>
-              {currentUser?.id === task.authorId &&
+              {canManageTask &&
                 currentTask.status === TaskStatus.SEARCHING && (
                   <div className="flex gap-2">
                     <button
