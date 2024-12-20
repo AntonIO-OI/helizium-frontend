@@ -149,4 +149,41 @@ export function deleteTask(taskId: number, authorId: number): boolean {
   const updatedTasks = tasks.filter(t => t.id !== taskId);
   saveTasks(updatedTasks);
   return true;
+}
+
+export function editTask(
+  taskId: number, 
+  authorId: number, 
+  updates: Partial<Task>
+): Task | null {
+  const { tasks } = getSearchData();
+  const task = tasks.find(t => t.id === taskId);
+  
+  if (!task || 
+      task.authorId !== authorId || 
+      task.status !== TaskStatus.SEARCHING ||
+      task.applicants.length > 0) {
+    return null;
+  }
+
+  const updatedTask = {
+    ...task,
+    ...updates,
+    // Ensure these fields cannot be modified
+    id: task.id,
+    authorId: task.authorId,
+    status: task.status,
+    applicants: task.applicants,
+    rejectedApplicants: task.rejectedApplicants,
+    performerId: task.performerId,
+    workResult: task.workResult,
+    completed: task.completed
+  };
+
+  const updatedTasks = tasks.map(t => 
+    t.id === taskId ? updatedTask : t
+  );
+
+  saveTasks(updatedTasks);
+  return updatedTask;
 } 

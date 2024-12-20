@@ -2,7 +2,16 @@ import { useState } from 'react';
 import { Task, User, TaskStatus } from '@/app/types/search';
 import { getChildCategoryIds } from '@/app/utils/categories';
 import { getSearchData } from '@/app/utils/storage';
-import { Calendar, DollarSign, Star, Clock, ChevronRight, XCircle, ArrowRight, Folder } from 'lucide-react';
+import {
+  Calendar,
+  DollarSign,
+  Star,
+  Clock,
+  ChevronRight,
+  XCircle,
+  ArrowRight,
+  Folder,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getUser } from '@/app/data/mockUsers';
@@ -18,6 +27,7 @@ import {
 import { getStatusText } from '../search/TaskItem';
 import { getStatusColor } from '../search/TaskItem';
 import { useRouter } from 'next/navigation';
+import TaskEditForm from './TaskEditForm';
 
 interface TaskDetailProps {
   task: Task;
@@ -102,8 +112,9 @@ export default function TaskDetail({
   const [showWorkForm, setShowWorkForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionForm, setShowRejectionForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { tasks, categories } = getSearchData();
-  const category = categories.find(cat => cat.id === task.category);
+  const category = categories.find((cat) => cat.id === task.category);
   const router = useRouter();
 
   const approvedPerformer = currentTask.performerId
@@ -195,58 +206,87 @@ export default function TaskDetail({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <span>Task #{task.id}</span>
-            <ChevronRight className="w-4 h-4" />
-            <span>Posted {formatDate(task.posted)}</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                currentTask.status,
-              )}`}
-            >
-              {getStatusText(currentTask.status)}
-            </span>
-            {currentUser?.id === task.authorId && currentTask.status === TaskStatus.SEARCHING && (
-              <button
-                onClick={handleDeleteTask}
-                className="px-3 py-1 text-red-600 border border-red-200 rounded hover:bg-red-50"
-              >
-                Delete Task
-              </button>
-            )}
-          </div>
+      {isEditing ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
+          <TaskEditForm
+            task={currentTask}
+            categories={categories}
+            onCancel={() => setIsEditing(false)}
+            onUpdate={(updatedTask) => {
+              setCurrentTask(updatedTask);
+              setIsEditing(false);
+            }}
+          />
         </div>
-
-        <h1 className="text-2xl md:text-3xl font-bold mb-4">{task.title}</h1>
-
-        <div className="flex flex-wrap gap-4 items-center mb-6">
-          <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
-            <DollarSign className="w-5 h-5 text-green-600" />
-            <span className="font-semibold text-lg">{task.price}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <Calendar className="w-5 h-5" />
-            <span>Due date: {formatDate(task.date)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-2">
-              <Folder className="w-4 h-4" />
-              <span>{category?.title || 'Uncategorized'}</span>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <span>Task #{task.id}</span>
+              <ChevronRight className="w-4 h-4" />
+              <span>Posted {formatDate(task.posted)}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                  currentTask.status,
+                )}`}
+              >
+                {getStatusText(currentTask.status)}
+              </span>
+              {currentUser?.id === task.authorId &&
+                currentTask.status === TaskStatus.SEARCHING && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-3 py-1 text-blue-600 border border-blue-200 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={currentTask.applicants.length > 0}
+                      title={currentTask.applicants.length > 0 ? "Cannot edit task with pending applicants" : ""}
+                    >
+                      Edit Task
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this task?')) {
+                          handleDeleteTask();
+                        }
+                      }}
+                      className="px-3 py-1 text-red-600 border border-red-200 rounded hover:bg-red-50"
+                    >
+                      Delete Task
+                    </button>
+                  </div>
+                )}
             </div>
           </div>
-        </div>
 
-        <div className="prose max-w-none">
-          <p className="text-gray-600 text-lg leading-relaxed">
-            {task.content}
-          </p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">{task.title}</h1>
+
+          <div className="flex flex-wrap gap-4 items-center mb-6">
+            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
+              <DollarSign className="w-5 h-5 text-green-600" />
+              <span className="font-semibold text-lg">{task.price}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="w-5 h-5" />
+              <span>Due date: {formatDate(task.date)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-2">
+                <Folder className="w-4 h-4" />
+                <span>{category?.title || 'Uncategorized'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="prose max-w-none">
+            <p className="text-gray-600 text-lg leading-relaxed">
+              {task.content}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 divide-y divide-gray-100">
         <div className="p-6">
@@ -423,7 +463,9 @@ export default function TaskDetail({
 
             {currentTask.rejectionMessage && (
               <div className="mb-6">
-                <h3 className="font-medium mb-2 text-red-600">Changes Requested:</h3>
+                <h3 className="font-medium mb-2 text-red-600">
+                  Changes Requested:
+                </h3>
                 <textarea
                   value={currentTask.rejectionMessage}
                   readOnly
@@ -519,26 +561,28 @@ export default function TaskDetail({
           </div>
         )}
 
-      {currentUser?.id && currentTask.rejectedApplicants.includes(currentUser.id) && (
-        <div className="bg-white rounded-lg shadow-sm border border-red-100 p-6">
-          <div className="flex items-center gap-3 text-red-600 mb-4">
-            <XCircle className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Application Status</h2>
+      {currentUser?.id &&
+        currentTask.rejectedApplicants.includes(currentUser.id) && (
+          <div className="bg-white rounded-lg shadow-sm border border-red-100 p-6">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <XCircle className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Application Status</h2>
+            </div>
+            <p className="text-gray-600">
+              Your application for this task has been rejected. You can browse
+              other available tasks.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/recent"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Browse other tasks
+              </Link>
+            </div>
           </div>
-          <p className="text-gray-600">
-            Your application for this task has been rejected. You can browse other available tasks.
-          </p>
-          <div className="mt-4">
-            <Link 
-              href="/recent" 
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
-              <ArrowRight className="w-4 h-4" />
-              Browse other tasks
-            </Link>
-          </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
