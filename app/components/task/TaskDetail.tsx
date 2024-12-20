@@ -28,6 +28,7 @@ import { getStatusText } from '../search/TaskItem';
 import { getStatusColor } from '../search/TaskItem';
 import { useRouter } from 'next/navigation';
 import TaskEditForm from './TaskEditForm';
+import ReportButton from './ReportButton';
 
 interface TaskDetailProps {
   task: Task;
@@ -285,6 +286,19 @@ export default function TaskDetail({
               {task.content}
             </p>
           </div>
+
+          {currentUser && (
+            <div className="mt-4 border-t pt-4">
+              <ReportButton
+                taskId={task.id}
+                currentUserId={currentUser.id}
+                isEmailConfirmed={currentUser.emailConfirmed}
+                isOwnTask={currentUser.id === task.authorId}
+                isBanned={currentUser.banned}
+                isLoggedIn={!!currentUser}
+              />
+            </div>
+          )}
         </div>
       )}
 

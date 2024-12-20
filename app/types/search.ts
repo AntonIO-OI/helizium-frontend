@@ -77,3 +77,12 @@ export interface SortConfig {
   field: SortField;
   direction: SortDirection;
 }
+
+export interface Report {
+  id: number;
+  taskId: number;
+  reporterId: number;
+  reason: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  createdAt: string;
+}
