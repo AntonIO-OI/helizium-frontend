@@ -165,6 +165,7 @@ export default function TaskCreationForm({ categories, authorId, disabled = fals
             onChange={(e) => setDate(e.target.value)}
             className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black"
             min={new Date().toISOString().split('T')[0]}
+            max={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]}
           />
         </div>
       </div>

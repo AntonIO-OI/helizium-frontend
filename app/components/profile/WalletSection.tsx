@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import { Copy, Wallet, ExternalLink, LogOut } from 'lucide-react';
+import { Copy, Wallet, ExternalLink } from 'lucide-react';
 
 export default function WalletSection() {
   const [account, setAccount] = useState<string | null>(null);
@@ -28,13 +28,16 @@ export default function WalletSection() {
     }
   };
 
-  const updateBalanceUsd = async (ethBalance: string) => {
-    const ethPrice = await fetchEthPrice();
-    if (ethPrice) {
-      const usdBalance = parseFloat(ethBalance) * ethPrice;
-      setBalanceUsd(usdBalance.toFixed(2));
-    }
-  };
+  const updateBalanceUsd = useCallback(
+    async (ethBalance: string) => {
+      const ethPrice = await fetchEthPrice();
+      if (ethPrice) {
+        const usdBalance = parseFloat(ethBalance) * ethPrice;
+        setBalanceUsd(usdBalance.toFixed(2));
+      }
+    },
+    [setBalanceUsd],
+  );
 
   const connectWallet = async () => {
     try {
@@ -44,18 +47,18 @@ export default function WalletSection() {
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      
+      const accounts = await provider.send('eth_requestAccounts', []);
+
       if (accounts.length > 0) {
         setAccount(accounts[0]);
         const balance = await provider.getBalance(accounts[0]);
         const ethBalance = ethers.formatEther(balance);
         setBalance(ethBalance);
         await updateBalanceUsd(ethBalance);
-        
+
         const network = await provider.getNetwork();
         setNetworkName(network.name);
-        
+
         const feeData = await provider.getFeeData();
         setGasPrice(ethers.formatUnits(feeData.gasPrice || 0, 'gwei'));
 
@@ -69,21 +72,24 @@ export default function WalletSection() {
     }
   };
 
-  const handleAccountsChanged = async (accounts: string[]) => {
-    if (accounts.length === 0) {
-      setAccount(null);
-      setBalance(null);
-      setBalanceUsd(null);
-      localStorage.removeItem('walletConnected');
-    } else if (accounts[0] !== account) {
-      setAccount(accounts[0]);
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const balance = await provider.getBalance(accounts[0]);
-      const ethBalance = ethers.formatEther(balance);
-      setBalance(ethBalance);
-      await updateBalanceUsd(ethBalance);
-    }
-  };
+  const handleAccountsChanged = useCallback(
+    async (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setAccount(null);
+        setBalance(null);
+        setBalanceUsd(null);
+        localStorage.removeItem('walletConnected');
+      } else if (accounts[0] !== account) {
+        setAccount(accounts[0]);
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(accounts[0]);
+        const ethBalance = ethers.formatEther(balance);
+        setBalance(ethBalance);
+        await updateBalanceUsd(ethBalance);
+      }
+    },
+    [account, updateBalanceUsd],
+  );
 
   const copyAddress = async () => {
     if (account) {
@@ -96,21 +102,21 @@ export default function WalletSection() {
   useEffect(() => {
     const checkConnection = async () => {
       const shouldConnect = localStorage.getItem('walletConnected') === 'true';
-      
+
       if (shouldConnect && window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         try {
-          const accounts = await provider.send("eth_accounts", []);
+          const accounts = await provider.send('eth_accounts', []);
           if (accounts.length > 0) {
             setAccount(accounts[0]);
             const balance = await provider.getBalance(accounts[0]);
             const ethBalance = ethers.formatEther(balance);
             setBalance(ethBalance);
             await updateBalanceUsd(ethBalance);
-            
+
             const network = await provider.getNetwork();
             setNetworkName(network.name);
-            
+
             const feeData = await provider.getFeeData();
             setGasPrice(ethers.formatUnits(feeData.gasPrice || 0, 'gwei'));
 
@@ -126,10 +132,13 @@ export default function WalletSection() {
 
     return () => {
       if (window.ethereum && window.ethereum.removeListener) {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener(
+          'accountsChanged',
+          handleAccountsChanged,
+        );
       }
     };
-  }, []);
+  }, [handleAccountsChanged, updateBalanceUsd]);
 
   const openEtherscan = () => {
     if (account) {
@@ -163,7 +172,9 @@ export default function WalletSection() {
         <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
             <div className="text-sm text-gray-500 mb-1">Connected Network</div>
-            <div className="font-medium capitalize">{networkName || 'Unknown'}</div>
+            <div className="font-medium capitalize">
+              {networkName || 'Unknown'}
+            </div>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
@@ -193,7 +204,7 @@ export default function WalletSection() {
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
               <div className="text-sm text-gray-500 mb-1">Balance</div>
@@ -202,9 +213,7 @@ export default function WalletSection() {
                   {parseFloat(balance || '0').toFixed(4)} ETH
                 </span>
                 {balanceUsd && (
-                  <span className="text-gray-500">
-                    ≈ ${balanceUsd}
-                  </span>
+                  <span className="text-gray-500">≈ ${balanceUsd}</span>
                 )}
               </div>
             </div>
@@ -223,4 +232,4 @@ export default function WalletSection() {
       )}
     </div>
   );
-} 
+}

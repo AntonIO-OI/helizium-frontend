@@ -13,7 +13,6 @@ import {
   Folder,
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { getUser } from '@/app/data/mockUsers';
 import {
   applyForTask,
@@ -315,17 +314,7 @@ export default function TaskDetail({
           >
             <div className="relative">
               <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 transition">
-                {author.avatar ? (
-                  <Image
-                    src={author.avatar}
-                    alt={author.username}
-                    width={48}
-                    height={48}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  author.username[0]
-                )}
+                {author.username[0]}
               </div>
             </div>
 
@@ -361,17 +350,7 @@ export default function TaskDetail({
                 className="flex items-center gap-4 group"
               >
                 <div className="w-12 h-12 bg-gray-800 text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-700 transition">
-                  {approvedPerformer.avatar ? (
-                    <Image
-                      src={approvedPerformer.avatar}
-                      alt={approvedPerformer.username}
-                      width={48}
-                      height={48}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    approvedPerformer.username[0]
-                  )}
+                  {approvedPerformer.username[0]}
                 </div>
 
                 <div>
