@@ -9,7 +9,7 @@ import { getReports, updateReportStatus } from '@/app/utils/reportManagement';
 import { getUser } from '@/app/data/mockUsers';
 import { getSearchData } from '@/app/utils/storage';
 import { Report, User } from '@/app/types/search';
-import { AlertCircle, Check, X, ExternalLink } from 'lucide-react';
+import { Check, X, ExternalLink } from 'lucide-react';
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
