@@ -1,5 +1,4 @@
 import { Report } from '../types/search';
-import { getSearchData } from './storage';
 
 export function saveReports(reports: Report[]) {
   localStorage.setItem('reports', JSON.stringify(reports));
