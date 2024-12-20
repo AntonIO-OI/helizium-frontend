@@ -75,7 +75,7 @@ export default function ReportsPage() {
                         </Link>
                       </h3>
                       <p className="text-sm text-gray-600">
-                        Reported by {reporter.username} on {new Date(report.createdAt).toLocaleDateString()}
+                        Reported by <Link href={`/client/${reporter.id}`} className="text-blue-600 hover:text-blue-800">{reporter.username}</Link> on {new Date(report.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-sm ${
