@@ -90,6 +90,7 @@ export default function Profile() {
               username={userData.username}
               email={userData.email}
               isEmailConfirmed={userData.emailConfirmed}
+              isAdmin={userData.admin}
             />
             <ProfileStats userId={userData.id} />
             <ProfileActions
