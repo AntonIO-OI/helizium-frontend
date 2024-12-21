@@ -17,12 +17,15 @@ import {
   Calendar,
   ChevronRight,
   BanIcon,
+  MessageCircleIcon,
+  MessageCircleOffIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import TaskList from '@/app/components/task/TaskList';
 import ProfileButton from '@/app/components/profile/ProfileButton';
 import ChatModal from '@/app/components/ChatModal';
 import Toast from '@/app/components/Toast';
+import PersonalChat from '@/app/components/PersonalChat';
 
 const PREVIEW_TASKS_COUNT = 3;
 
@@ -36,6 +39,8 @@ export default function ClientPage({
   const [isLoading, setIsLoading] = useState(true);
 
   const [userData, setUserData] = useState<User | null>(null);
+
+  const [showChatModal, setShowChatModal] = useState(false);
 
   const [toast, setToast] = useState<{
     message: string;
@@ -163,6 +168,18 @@ export default function ClientPage({
           onClose={() => setToast({ message: '', type: '' })}
         />
       )}
+      {userData &&
+        userData.id !== client.id &&
+        !userData.banned &&
+        !client.banned && (
+          <PersonalChat
+            isVisible={showChatModal}
+            onClose={() => setShowChatModal(false)}
+            userId={userData?.id || 0}
+            contactId={client.id}
+            contactUsername={client.username}
+          />
+        )}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Profile Header */}
@@ -211,6 +228,27 @@ export default function ClientPage({
                     ></ProfileButton>
                   </div>
                 ) : null}
+                <div className="mt-4">
+                  {userData &&
+                    userData.id !== client.id &&
+                    !userData.banned &&
+                    !client.banned &&
+                    (showChatModal ? (
+                      <ProfileButton
+                        onClick={() => setShowChatModal(false)}
+                        label="Close chat"
+                        variant="primary"
+                        icon={MessageCircleOffIcon}
+                      />
+                    ) : (
+                      <ProfileButton
+                        onClick={() => setShowChatModal(true)}
+                        label="Private chat"
+                        variant="primary"
+                        icon={MessageCircleIcon}
+                      />
+                    ))}
+                </div>
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { Message } from '../components/PersonalChat';
 import { User } from '../types/search';
 
 export const saveTestUsers = () => {
@@ -81,8 +82,19 @@ export const deleteUser = (id: number) => {
   }
 
   const users: User[] = JSON.parse(usersFromLocalStorage);
-  localStorage.setItem('users', JSON.stringify(users.filter((user) => user.id !== id)));
-}
+  localStorage.setItem(
+    'users',
+    JSON.stringify(users.filter((user) => user.id !== id)),
+  );
+
+  const chatData = localStorage.getItem('personalChat');
+  if (chatData) {
+    const messages: Message[] = JSON.parse(chatData);
+    messages.filter((msg) => msg.from !== id && msg.to !== id);
+
+    localStorage.setItem('personalChat', JSON.stringify(messages));
+  }
+};
 
 export const addUser = (user: User) => {
   const usersFromLocalStorage = localStorage.getItem('users');

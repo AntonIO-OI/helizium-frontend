@@ -13,6 +13,7 @@ import { User } from '../types/search';
 import ChatModal from '../components/ChatModal';
 import WalletSection from '../components/profile/WalletSection';
 import { FolderCog, Shield } from 'lucide-react';
+import ChatHistory from '../components/ChatHistory';
 
 export default function Profile() {
   const [userData, setUserData] = useState<User | null>(null);
@@ -122,6 +123,8 @@ export default function Profile() {
               onEdit={handleIndustryEdit}
             />
           </ProfileSection>
+
+          {!userData.banned && <ChatHistory userId={userData.id} />}
 
           <ProfileSection>
             <WalletSection />
