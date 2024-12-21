@@ -19,7 +19,8 @@ interface ChatHistoryProps {
 const ChatHistory: React.FC<ChatHistoryProps> = ({ userId }) => {
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [selectedContact, setSelectedContact] = useState<number>(0);
-  const [selectedContactUsername, setSelectedContactUsername] = useState<string>('');
+  const [selectedContactUsername, setSelectedContactUsername] =
+    useState<string>('');
   const [showChatModal, setShowChatModal] = useState(false);
 
   const refreshData = useCallback(() => {
@@ -37,17 +38,17 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userId }) => {
         )
         .reduce((acc: Record<number, ChatPreview>, msg: Message) => {
           const contactId = msg.from === userId ? msg.to : msg.from;
-          const contact = users.find(
-            (user) => user.id === contactId,
-          );
+          const contact = users.find((user) => user.id === contactId);
 
-          acc[contactId] = {
-            contactId,
-            contactName: contact?.username || `User ${contactId}`,
-            lastMessage: msg.message,
-            lastMessageTime: msg.posted,
-            highlight: !msg.read && msg.from === contactId,
-          };
+          if (contact && !contact.banned) {
+            acc[contactId] = {
+              contactId,
+              contactName: contact.username,
+              lastMessage: msg.message,
+              lastMessageTime: msg.posted,
+              highlight: !msg.read && msg.from === contactId,
+            };
+          }
 
           return acc;
         }, {});
@@ -55,12 +56,12 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userId }) => {
       const chatsArray: ChatPreview[] = Object.values(userChats);
 
       chatsArray.sort((a, b) => {
-      if (a.highlight !== b.highlight) {
-        return b.highlight ? 1 : -1;
-      }
+        if (a.highlight !== b.highlight) {
+          return b.highlight ? 1 : -1;
+        }
 
-      return b.lastMessageTime.localeCompare(a.lastMessageTime);
-    });
+        return b.lastMessageTime.localeCompare(a.lastMessageTime);
+      });
 
       setChats(chatsArray);
     }
