@@ -119,6 +119,8 @@ export default function ProfileActions({
   const [isMailSent, setIsMailSent] = useState(false);
   const [emailCode, setEmailCode] = useState('');
 
+  const [isBanned, setIsBanned] = useState(false);
+
   const generateRandomCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
@@ -171,7 +173,8 @@ export default function ProfileActions({
     setEmailConfirmed(user.emailConfirmed);
     setMfaEnabled(user.mfa);
     setTotpEnabled(user.totp);
-  }, [setEmailConfirmed, setMfaEnabled, setTotpEnabled]);
+    setIsBanned(user.banned);
+  }, [setEmailConfirmed, setMfaEnabled, setTotpEnabled, setIsBanned]);
 
   const openTokenModal = () => {
     const userData = fetchUser();
@@ -381,20 +384,22 @@ export default function ProfileActions({
           fullWidth
         />
 
-        {emailConfirmed ? (
-          <ProfileButton
-            label="Delete Account"
-            variant="danger"
-            icon={LucideTrash}
-            onClick={openDeleteModal}
-            fullWidth
-          />
-        ) : (
+        {!emailConfirmed && (
           <ProfileButton
             label="Confirm Email"
             variant="success"
             icon={LucideMail}
             onClick={openConfirmEmailModal}
+            fullWidth
+          />
+        )}
+
+        {!isBanned && (
+          <ProfileButton
+            label="Delete Account"
+            variant="danger"
+            icon={LucideTrash}
+            onClick={openDeleteModal}
             fullWidth
           />
         )}

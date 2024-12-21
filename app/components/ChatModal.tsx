@@ -9,7 +9,7 @@ export default function ChatModal() {
     if (userId) {
       const users = JSON.parse(localStorage.getItem('users') || '[]');
       const user = users.find((user: { id: number }) => user.id === +userId);
-      if (user && user.emailConfirmed) {
+      if (user && user.emailConfirmed && !user.banned) {
         setChatBotAccess(true);
       }
     }
