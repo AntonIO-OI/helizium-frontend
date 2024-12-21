@@ -50,7 +50,6 @@ export function deleteCategory(categoryId: number): boolean {
     localStorage.setItem('searchData', JSON.stringify(updatedSearchData));
     return true;
   } catch (error) {
-    console.error('Error deleting category:', error);
     return false;
   }
 }
@@ -75,7 +74,6 @@ export function updateCategory(updatedCategory: Category): boolean {
     
     return true;
   } catch (error) {
-    console.error('Error updating category:', error);
     return false;
   }
 }

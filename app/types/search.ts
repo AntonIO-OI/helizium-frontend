@@ -1,3 +1,5 @@
+import { ContractSignature } from "./contracts";
+
 export interface Category {
   id: number;
   parentCategory: number | null;
@@ -22,6 +24,8 @@ export interface Task {
   completed: boolean;
   status: TaskStatus;
   rejectionMessage: string | null;
+  contractSignature?: ContractSignature;
+  performerContractSignature?: ContractSignature;
 }
 
 export enum TaskStatus {

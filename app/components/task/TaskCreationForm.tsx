@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { Category, Task, TaskStatus } from '@/app/types/search';
 import { getSearchData, saveTasks } from '@/app/utils/storage';
 import { AlertCircle } from 'lucide-react';
+import { signTaskContract } from '@/app/utils/contractOperations';
 
 interface TaskCreationFormProps {
   categories: Category[];
@@ -27,53 +28,62 @@ export default function TaskCreationForm({ categories, authorId, disabled = fals
     setAiError('');
     setIsLoading(true);
 
-    if (disabled) {
-      setError('You are not allowed to create tasks at this time');
+    try {
+      if (disabled) {
+        setError('You are not allowed to create tasks at this time');
+        return;
+      }
+
+      if (!title || !content || !category || !price || !date) {
+        setError('Please fill in all fields');
+        return;
+      }
+
+      setError('AI is verifying your task...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      if (title[0] === title[0].toLowerCase() || content[0] === content[0].toLowerCase()) {
+        setError('');
+        setAiError("AI verification failed, please contact the assistant for further assistance.");
+        return;
+      }
+
+      const { tasks } = getSearchData();
+      const newTaskId = Math.max(...tasks.map(t => t.id)) + 1;
+
+      const contractResult = await signTaskContract('create', newTaskId, title);
+      if (!contractResult.success) {
+        setError(contractResult.error || 'Contract signing failed');
+        return;
+      }
+
+      const newTask: Task = {
+        id: newTaskId,
+        title,
+        content,
+        category,
+        price: parseFloat(price),
+        date,
+        posted: new Date().toISOString().split('T')[0],
+        authorId,
+        applicants: [],
+        rejectedApplicants: [],
+        performerId: null,
+        workResult: null,
+        completed: false,
+        status: TaskStatus.SEARCHING,
+        rejectionMessage: '',
+        contractSignature: contractResult.signature
+      };
+
+      const updatedTasks = [...tasks, newTask];
+      saveTasks(updatedTasks);
+      router.push(`/task/${newTask.id}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create task');
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    if (!title || !content || !category || !price || !date) {
-      setError('Please fill in all fields');
-      setIsLoading(false);
-      return;
-    }
-
-    // Show loading state
-    setError('AI is verifying your task...');
-
-    // Simulate AI verification with delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (title[0] === title[0].toLowerCase() || content[0] === content[0].toLowerCase()) {
-      setError('');
-      setAiError("AI verification failed, please contact the assistant for further assistance.");
-      setIsLoading(false);
-      return;
-    }
-
-    const { tasks } = getSearchData();
-    const newTask: Task = {
-      id: Math.max(...tasks.map(t => t.id)) + 1,
-      title,
-      content,
-      category,
-      price: parseFloat(price),
-      date,
-      posted: new Date().toISOString().split('T')[0],
-      authorId,
-      applicants: [],
-      rejectedApplicants: [],
-      performerId: null,
-      workResult: null,
-      completed: false,
-      status: TaskStatus.SEARCHING,
-      rejectionMessage: '',
-    };
-
-    saveTasks([...tasks, newTask]);
-    router.push(`/task/${newTask.id}`);
-    setIsLoading(false);
   };
 
   return (

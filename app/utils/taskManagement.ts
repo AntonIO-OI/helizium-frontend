@@ -1,4 +1,4 @@
-import { Task } from '../types/search';
+import { Task, ContractSignature } from '../types/search';
 import { getSearchData, saveTasks } from './storage';
 import { updateTaskStatus } from './tasks';
 import { TaskStatus } from '../types/search';
@@ -70,11 +70,15 @@ export function rejectApplicant(taskId: number, userId: number): Task | null {
   return updatedTask;
 }
 
-export function approveApplicant(taskId: number, userId: number): Task | null {
+export function approveApplicant(
+  taskId: number, 
+  userId: number, 
+  contractSignature: ContractSignature
+): Task | null {
   const { tasks } = getSearchData();
   const task = tasks.find(t => t.id === taskId);
   
-  if (!task || task.performerId || !task.applicants.includes(userId)) {
+  if (!task || task.performerId || !task.applicants.includes(userId) || !contractSignature) {
     return null;
   }
 
@@ -82,7 +86,8 @@ export function approveApplicant(taskId: number, userId: number): Task | null {
     ...task,
     applicants: [],
     performerId: userId,
-    status: TaskStatus.IN_PROGRESS
+    status: TaskStatus.IN_PROGRESS,
+    contractSignature
   });
 
   const updatedTasks = tasks.map(t => 
@@ -136,12 +141,17 @@ export function completeTask(taskId: number, authorId: number): Task | null {
   saveTasks(updatedTasks);
   return updatedTask;
 }
-export function deleteTask(taskId: number, currentUserId: number): boolean {
+
+export function deleteTask(
+  taskId: number, 
+  currentUserId: number,
+  contractSignature: ContractSignature
+): boolean {
   const { tasks } = getSearchData();
   const task = tasks.find(t => t.id === taskId);
   const currentUser = getUser(currentUserId);
   
-  if (!task || (!currentUser?.admin && task.authorId !== currentUserId)) {
+  if (!task || (!currentUser?.admin && task.authorId !== currentUserId) || !contractSignature) {
     return false;
   }
 

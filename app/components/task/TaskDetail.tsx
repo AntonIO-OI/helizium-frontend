@@ -28,7 +28,7 @@ import { getStatusColor } from '../search/TaskItem';
 import { useRouter } from 'next/navigation';
 import TaskEditForm from './TaskEditForm';
 import ReportButton from './ReportButton';
-import TaskSignButton from './TaskSignButton';
+import { signTaskContract } from '@/app/utils/contractOperations';
 
 interface TaskDetailProps {
   task: Task;
@@ -146,10 +146,18 @@ export default function TaskDetail({
     }
   };
 
-  const handleApprove = (userId: number) => {
-    const updatedTask = approveApplicant(task.id, userId);
-    if (updatedTask) {
-      setCurrentTask(updatedTask);
+  const handleApprove = async (userId: number) => {
+    try {
+      const contractResult = await signTaskContract('accept', task.id, task.title, userId);
+      if (!contractResult.success) {
+        return;
+      }
+
+      const updatedTask = approveApplicant(task.id, userId, contractResult.signature);
+      if (updatedTask) {
+        setCurrentTask(updatedTask);
+      }
+    } catch (err) {
     }
   };
 
@@ -189,11 +197,20 @@ export default function TaskDetail({
     }
   };
 
-  const handleDeleteTask = () => {
+  const handleDeleteTask = async () => {
     if (!currentUser) return;
-    const success = deleteTask(task.id, currentUser.id);
-    if (success) {
-      router.push('/recent');
+    
+    try {
+      const contractResult = await signTaskContract('delete', task.id, task.title);
+      if (!contractResult.success) {
+        return;
+      }
+
+      const success = deleteTask(task.id, currentUser.id, contractResult.signature);
+      if (success) {
+        router.push('/recent');
+      }
+    } catch (err) {
     }
   };
 
@@ -295,20 +312,6 @@ export default function TaskDetail({
             <p className="text-gray-600 text-lg leading-relaxed">
               {task.content}
             </p>
-          </div>
-
-          <div className="mt-6 flex items-center justify-between">
-            {currentUser && (
-              <TaskSignButton
-                taskId={task.id}
-                taskTitle={task.title}
-                disabled={
-                  !currentUser.emailConfirmed ||
-                  currentUser.banned ||
-                  currentUser.id === task.authorId
-                }
-              />
-            )}
           </div>
 
           {currentUser && (
