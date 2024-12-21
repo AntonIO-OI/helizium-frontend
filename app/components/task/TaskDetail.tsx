@@ -28,6 +28,7 @@ import { getStatusColor } from '../search/TaskItem';
 import { useRouter } from 'next/navigation';
 import TaskEditForm from './TaskEditForm';
 import ReportButton from './ReportButton';
+import TaskSignButton from './TaskSignButton';
 
 interface TaskDetailProps {
   task: Task;
@@ -204,10 +205,8 @@ export default function TaskDetail({
     !currentTask.performerId &&
     currentTask.status === TaskStatus.SEARCHING;
 
-  const canManageTask = currentUser && (
-    currentUser.id === task.authorId || 
-    currentUser.admin
-  );
+  const canManageTask =
+    currentUser && (currentUser.id === task.authorId || currentUser.admin);
 
   return (
     <div className="space-y-6">
@@ -239,29 +238,36 @@ export default function TaskDetail({
               >
                 {getStatusText(currentTask.status)}
               </span>
-              {canManageTask &&
-                currentTask.status === TaskStatus.SEARCHING && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="px-3 py-1 text-blue-600 border border-blue-200 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={currentTask.applicants.length > 0}
-                      title={currentTask.applicants.length > 0 ? "Cannot edit task with pending applicants" : ""}
-                    >
-                      Edit Task
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this task?')) {
-                          handleDeleteTask();
-                        }
-                      }}
-                      className="px-3 py-1 text-red-600 border border-red-200 rounded hover:bg-red-50"
-                    >
-                      Delete Task
-                    </button>
-                  </div>
-                )}
+              {canManageTask && currentTask.status === TaskStatus.SEARCHING && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-3 py-1 text-blue-600 border border-blue-200 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={currentTask.applicants.length > 0}
+                    title={
+                      currentTask.applicants.length > 0
+                        ? 'Cannot edit task with pending applicants'
+                        : ''
+                    }
+                  >
+                    Edit Task
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Are you sure you want to delete this task?',
+                        )
+                      ) {
+                        handleDeleteTask();
+                      }
+                    }}
+                    className="px-3 py-1 text-red-600 border border-red-200 rounded hover:bg-red-50"
+                  >
+                    Delete Task
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -289,6 +295,20 @@ export default function TaskDetail({
             <p className="text-gray-600 text-lg leading-relaxed">
               {task.content}
             </p>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between">
+            {currentUser && (
+              <TaskSignButton
+                taskId={task.id}
+                taskTitle={task.title}
+                disabled={
+                  !currentUser.emailConfirmed ||
+                  currentUser.banned ||
+                  currentUser.id === task.authorId
+                }
+              />
+            )}
           </div>
 
           {currentUser && (
