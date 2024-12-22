@@ -16,6 +16,7 @@ export default function RecentTasks() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -27,6 +28,7 @@ export default function RecentTasks() {
       );
       setTasks(sortedTasks);
       setTotalPages(Math.ceil(sortedTasks.length / ITEMS_PER_PAGE));
+      setIsAuthorized(!!localStorage.getItem('userId'));
       setIsLoading(false);
     };
 
@@ -53,15 +55,15 @@ export default function RecentTasks() {
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-2xl font-bold">Recent Tasks</h1>
             <div className="flex items-center gap-4">
-              <span className="text-gray-500">
-                {tasks.length} tasks
-              </span>
-              <Link
-                href="/task/create"
-                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
-              >
-                Create Task
-              </Link>
+              <span className="text-gray-500">{tasks.length} tasks</span>
+              {isAuthorized && (
+                <Link
+                  href="/task/create"
+                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                >
+                  Create Task
+                </Link>
+              )}
             </div>
           </div>
 
@@ -80,23 +82,27 @@ export default function RecentTasks() {
               </button>
 
               <div className="flex items-center gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`w-10 h-10 rounded-lg border ${
-                      currentPage === pageNum 
-                        ? 'bg-black text-white' 
-                        : 'bg-white hover:bg-gray-50'
-                    } transition`}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`w-10 h-10 rounded-lg border ${
+                        currentPage === pageNum
+                          ? 'bg-black text-white'
+                          : 'bg-white hover:bg-gray-50'
+                      } transition`}
+                    >
+                      {pageNum}
+                    </button>
+                  ),
+                )}
               </div>
 
               <button
-                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                onClick={() =>
+                  handlePageChange(Math.min(currentPage + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
               >

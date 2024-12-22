@@ -7,7 +7,6 @@ import AuthLayout from '../components/AuthLayout';
 import { useEffect, useRef, useState } from 'react';
 import { User } from '../types/search';
 import { useRouter } from 'next/navigation';
-import { formatDate } from '../utils/formatDate';
 import Toast from '../components/Toast';
 
 const USERNAME_VALIDATOR_MESSAGE =
@@ -134,7 +133,7 @@ export default function SignUp() {
       id,
       rating: 0,
       completedTasks: 0,
-      joinedDate: formatDate(new Date()),
+      joinedDate: '2024-12-23',
       admin: false,
       mfa: false,
       totp: false,

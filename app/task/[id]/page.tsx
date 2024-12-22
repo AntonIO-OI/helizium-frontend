@@ -183,7 +183,7 @@ export default function TaskPage({
                       </div>
 
                       {/* Delete button if the current user is the author of the comment */}
-                      {currentUser?.id === comment.userId && (
+                      {(currentUser?.id === comment.userId || currentUser?.admin) && (
                         <button
                           onClick={() => handleDeleteComment(comment.id)}
                           className="text-red-500 hover:text-red-700"

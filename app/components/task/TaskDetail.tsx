@@ -11,6 +11,8 @@ import {
   XCircle,
   ArrowRight,
   Folder,
+  MessageCircleOffIcon,
+  MessageCircleIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getUser } from '@/app/data/mockUsers';
@@ -29,6 +31,8 @@ import { useRouter } from 'next/navigation';
 import TaskEditForm from './TaskEditForm';
 import ReportButton from './ReportButton';
 import { signTaskContract } from '@/app/utils/contractOperations';
+import ProfileButton from '../profile/ProfileButton';
+import PersonalChat from '../PersonalChat';
 
 interface TaskDetailProps {
   task: Task;
@@ -115,6 +119,7 @@ export default function TaskDetail({
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { tasks, categories } = getSearchData();
+  const [showChatModal, setShowChatModal] = useState(false);
   const category = categories.find((cat) => cat.id === task.category);
   const router = useRouter();
 
@@ -148,17 +153,25 @@ export default function TaskDetail({
 
   const handleApprove = async (userId: number) => {
     try {
-      const contractResult = await signTaskContract('accept', task.id, task.title, userId);
+      const contractResult = await signTaskContract(
+        'accept',
+        task.id,
+        task.title,
+        userId,
+      );
       if (!contractResult.success) {
         return;
       }
 
-      const updatedTask = approveApplicant(task.id, userId, contractResult.signature);
+      const updatedTask = approveApplicant(
+        task.id,
+        userId,
+        contractResult.signature,
+      );
       if (updatedTask) {
         setCurrentTask(updatedTask);
       }
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const handleSubmitWork = () => {
@@ -219,19 +232,26 @@ export default function TaskDetail({
 
   const handleDeleteTask = async () => {
     if (!currentUser) return;
-    
+
     try {
-      const contractResult = await signTaskContract('delete', task.id, task.title);
+      const contractResult = await signTaskContract(
+        'delete',
+        task.id,
+        task.title,
+      );
       if (!contractResult.success) {
         return;
       }
 
-      const success = deleteTask(task.id, currentUser.id, contractResult.signature);
+      const success = deleteTask(
+        task.id,
+        currentUser.id,
+        contractResult.signature,
+      );
       if (success) {
         router.push('/recent');
       }
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const canApply =
@@ -245,8 +265,42 @@ export default function TaskDetail({
   const canManageTask =
     currentUser && (currentUser.id === task.authorId || currentUser.admin);
 
+  const isAdminViewBothSidesChat =
+    !!currentUser &&
+    currentUser.admin &&
+    !canApply &&
+    currentUser.id !== currentTask.authorId &&
+    currentUser.id !== currentTask.performerId;
+
+  let chatContact: number | null = null;
+  let contactUsername: string | null = null;
+  if (currentUser && (!canApply || currentUser.id !== currentTask.authorId)) {
+    if (isAdminViewBothSidesChat) {
+      chatContact = currentTask.performerId;
+      contactUsername = `${author.username} and ${approvedPerformer?.username}`;
+    } else if (currentUser.id !== currentTask.authorId) {
+      chatContact = currentTask.authorId;
+      contactUsername = author.username;
+    } else {
+      chatContact = currentTask.performerId;
+      contactUsername = approvedPerformer?.username ?? null;
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {currentUser && chatContact && contactUsername && (
+        <PersonalChat
+          isVisible={showChatModal}
+          onClose={() => setShowChatModal(false)}
+          userId={
+            isAdminViewBothSidesChat ? currentTask.authorId : currentUser.id
+          }
+          contactId={chatContact}
+          contactUsername={contactUsername}
+          readonly={isAdminViewBothSidesChat}
+        />
+      )}
       {isEditing ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
           <TaskEditForm
@@ -336,14 +390,32 @@ export default function TaskDetail({
 
           {currentUser && (
             <div className="mt-4 border-t pt-4">
-              <ReportButton
-                taskId={task.id}
-                currentUserId={currentUser.id}
-                isEmailConfirmed={currentUser.emailConfirmed}
-                isOwnTask={currentUser.id === task.authorId}
-                isBanned={currentUser.banned}
-                isLoggedIn={!!currentUser}
-              />
+              {!currentUser.admin && (
+                <ReportButton
+                  taskId={task.id}
+                  currentUserId={currentUser.id}
+                  isEmailConfirmed={currentUser.emailConfirmed}
+                  isOwnTask={currentUser.id === task.authorId}
+                  isBanned={currentUser.banned}
+                  isLoggedIn={!!currentUser}
+                />
+              )}
+              {isAdminViewBothSidesChat &&
+                (showChatModal ? (
+                  <ProfileButton
+                    onClick={() => setShowChatModal(false)}
+                    label="Close chat"
+                    variant="primary"
+                    icon={MessageCircleOffIcon}
+                  />
+                ) : (
+                  <ProfileButton
+                    onClick={() => setShowChatModal(true)}
+                    label="Chat history"
+                    variant="primary"
+                    icon={MessageCircleIcon}
+                  />
+                ))}
             </div>
           )}
         </div>
@@ -351,43 +423,64 @@ export default function TaskDetail({
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 divide-y divide-gray-100">
         <div className="p-6">
-          <Link
-            href={`/client/${author.id}`}
-            className="flex items-center gap-4 group"
-          >
-            <div className="relative">
-              <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 transition">
-                {author.username[0]}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold group-hover:text-gray-600 transition">
-                  {author.username}
-                </h3>
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
-                  Client
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400" />
-                  <span>{author.rating}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  <span>Since {new Date(author.joinedDate).getFullYear()}</span>
+          <div className="flex justify-between">
+            <Link
+              className="flex items-center gap-4 group"
+              href={`/client/${author.id}`}
+            >
+              <div className="relative">
+                <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 transition">
+                  {author.username[0]}
                 </div>
               </div>
-            </div>
-          </Link>
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold group-hover:text-gray-600 transition">
+                    {author.username}
+                  </h3>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    Client
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span>{author.rating}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    <span>
+                      Since {new Date(author.joinedDate).getFullYear()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {chatContact === currentTask.authorId &&
+              (showChatModal ? (
+                <ProfileButton
+                  onClick={() => setShowChatModal(false)}
+                  label="Close chat"
+                  variant="primary"
+                  icon={MessageCircleOffIcon}
+                />
+              ) : (
+                <ProfileButton
+                  onClick={() => setShowChatModal(true)}
+                  label="Private chat"
+                  variant="primary"
+                  icon={MessageCircleIcon}
+                />
+              ))}
+          </div>
         </div>
 
         {approvedPerformer && (
           <div className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between">
               <Link
                 href={`/client/${approvedPerformer.id}`}
                 className="flex items-center gap-4 group"
@@ -421,6 +514,24 @@ export default function TaskDetail({
                   </div>
                 </div>
               </Link>
+
+              {chatContact === approvedPerformer.id &&
+                !isAdminViewBothSidesChat &&
+                (showChatModal ? (
+                  <ProfileButton
+                    onClick={() => setShowChatModal(false)}
+                    label="Close chat"
+                    variant="primary"
+                    icon={MessageCircleOffIcon}
+                  />
+                ) : (
+                  <ProfileButton
+                    onClick={() => setShowChatModal(true)}
+                    label="Private chat"
+                    variant="primary"
+                    icon={MessageCircleIcon}
+                  />
+                ))}
             </div>
           </div>
         )}

@@ -175,9 +175,10 @@ export default function ClientPage({
           <PersonalChat
             isVisible={showChatModal}
             onClose={() => setShowChatModal(false)}
-            userId={userData?.id || 0}
+            userId={userData.id}
             contactId={client.id}
             contactUsername={client.username}
+            readonly={false}
           />
         )}
       <main className="container mx-auto px-4 py-8">
@@ -191,11 +192,15 @@ export default function ClientPage({
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-4">
                   <h1 className="text-3xl font-bold">{client.username}</h1>
-                  {client.banned && (
+                  {client.banned ? (
                     <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-sm">
                       Banned
                     </span>
-                  )}
+                  ) : client.admin ? (
+                    <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-sm">
+                      Admin
+                    </span>
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="flex items-center gap-2 text-gray-600">
