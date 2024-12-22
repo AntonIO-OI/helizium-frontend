@@ -92,6 +92,7 @@ export default function Profile() {
               email={userData.email}
               isEmailConfirmed={userData.emailConfirmed}
               isAdmin={userData.admin}
+              isBanned={userData.banned}
             />
             <ProfileStats userId={userData.id} />
             <ProfileActions

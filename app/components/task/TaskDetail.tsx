@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import { Task, User, TaskStatus } from '@/app/types/search';
 import { getChildCategoryIds } from '@/app/utils/categories';
@@ -193,13 +194,13 @@ export default function TaskDetail({
 
   const handleCompleteTask = async () => {
     if (!currentUser) return;
-    
+
     try {
       const contractResult = await signTaskContract(
-        'complete', 
-        currentTask.id, 
+        'complete',
+        currentTask.id,
         currentTask.title,
-        currentTask.performerId || undefined
+        currentTask.performerId || undefined,
       );
 
       if (!contractResult.success) {
@@ -207,17 +208,16 @@ export default function TaskDetail({
       }
 
       const updatedTask = completeTask(
-        currentTask.id, 
+        currentTask.id,
         currentUser.id,
-        contractResult.signature
+        contractResult.signature,
       );
 
       if (updatedTask) {
         setCurrentTask(updatedTask);
         setShowRatingModal(true);
       }
-    } catch (err: any) {
-    }
+    } catch (err) {}
   };
 
   const handleRejectWork = () => {
@@ -261,17 +261,17 @@ export default function TaskDetail({
   const handleRatingSubmit = (rating: number) => {
     if (currentTask.performerId) {
       updateUserRating(currentTask.performerId, rating);
-      
+
       const updatedTask = {
         ...currentTask,
-        performerRating: rating
+        performerRating: rating,
       };
-      
-      const updatedTasks = tasks.map(t => 
-        t.id === currentTask.id ? updatedTask : t
+
+      const updatedTasks = tasks.map((t) =>
+        t.id === currentTask.id ? updatedTask : t,
       );
       saveTasks(updatedTasks);
-      
+
       setCurrentTask(updatedTask);
     }
     setShowRatingModal(false);
@@ -418,7 +418,6 @@ export default function TaskDetail({
                   taskId={task.id}
                   currentUserId={currentUser.id}
                   isEmailConfirmed={currentUser.emailConfirmed}
-                  isOwnTask={currentUser.id === task.authorId}
                   isBanned={currentUser.banned}
                   isLoggedIn={!!currentUser}
                 />
@@ -763,30 +762,39 @@ export default function TaskDetail({
         <RatingModal
           onSubmit={handleRatingSubmit}
           onClose={() => setShowRatingModal(false)}
-          performerName={getUser(currentTask.performerId)?.username || 'Freelancer'}
+          performerName={
+            getUser(currentTask.performerId)?.username || 'Freelancer'
+          }
         />
       )}
 
-      {currentTask.completed && currentTask.performerId === currentUser?.id && (
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-sm text-gray-600">Rating for this task: </span>
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`w-4 h-4 ${
-                  star <= (currentTask.performerRating || 0)
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-            {!currentTask.performerRating && (
-              <span className="text-sm text-gray-500 ml-1">Not rated yet</span>
-            )}
+      {currentTask.completed &&
+        (currentUser?.admin ||
+          currentTask.performerId === currentUser?.id ||
+          currentTask.authorId === currentUser?.id) && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-gray-600">
+              Rating for this task:{' '}
+            </span>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-4 h-4 ${
+                    star <= (currentTask.performerRating || 0)
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+              {!currentTask.performerRating && (
+                <span className="text-sm text-gray-500 ml-1">
+                  Not rated yet
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

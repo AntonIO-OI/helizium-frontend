@@ -22,6 +22,13 @@ function getRndInteger(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const formatJoinedDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function SignUp() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -133,11 +140,12 @@ export default function SignUp() {
       id,
       rating: 0,
       completedTasks: 0,
-      joinedDate: '2024-12-23',
+      joinedDate: formatJoinedDate(new Date()),
       admin: false,
       mfa: false,
       totp: false,
       banned: false,
+      reviewsCount: 0,
     };
 
     users.push(newUser);

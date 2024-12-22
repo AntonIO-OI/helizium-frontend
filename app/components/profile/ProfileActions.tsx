@@ -62,8 +62,6 @@ export default function ProfileActions({
   const [isConfirmEmailModalOpen, setConfirmEmailModalOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
 
-  const [isAdmin, setIsAdmin] = useState(false);
-
   const validatePassword = (value: string) => {
     const PASSWORD_REGEX =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
@@ -176,7 +174,6 @@ export default function ProfileActions({
     setMfaEnabled(user.mfa);
     setTotpEnabled(user.totp);
     setIsBanned(user.banned);
-    setIsAdmin(user.admin);
   }, [setEmailConfirmed, setMfaEnabled, setTotpEnabled, setIsBanned]);
 
   const openTokenModal = () => {
@@ -344,7 +341,7 @@ export default function ProfileActions({
   };
 
   return (
-    <div className="space-y-8">
+    <div>
       {toast.message && (
         <Toast
           message={toast.message}
@@ -371,17 +368,6 @@ export default function ProfileActions({
           disabled={!emailConfirmed}
           fullWidth
         />
-
-        {isAdmin && (
-          <ProfileButton
-            label="Create Category"
-            variant="primary"
-            icon={LucidePlus}
-            onClick={() => router.push('/category/create')}
-            disabled={!emailConfirmed}
-            fullWidth
-          />
-        )}
 
         <ProfileButton
           label="View Taken"
@@ -422,7 +408,7 @@ export default function ProfileActions({
       </div>
 
       {/* Security Actions */}
-      <div>
+      <div className='mt-8'>
         <h2 className="text-xl font-bold mb-4">Security Settings</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ProfileButton

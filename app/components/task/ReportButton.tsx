@@ -6,7 +6,6 @@ interface ReportButtonProps {
   taskId: number;
   currentUserId: number;
   isEmailConfirmed: boolean;
-  isOwnTask: boolean;
   isBanned: boolean;
   isLoggedIn: boolean;
 }
@@ -15,7 +14,6 @@ export default function ReportButton({
   taskId, 
   currentUserId,
   isEmailConfirmed,
-  isOwnTask,
   isBanned,
   isLoggedIn
 }: ReportButtonProps) {
@@ -56,7 +54,6 @@ export default function ReportButton({
 
   if (!isLoggedIn) return null;
   if (!isEmailConfirmed) return null;
-  if (isOwnTask) return null;
   if (isBanned) return null;
   if (!canReport) {
     return (

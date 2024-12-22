@@ -5,6 +5,7 @@ interface ProfileHeaderProps {
   email: string;
   isEmailConfirmed: boolean;
   isAdmin: boolean;
+  isBanned: boolean;
 }
 
 export default function ProfileHeader({
@@ -12,6 +13,7 @@ export default function ProfileHeader({
   email,
   isEmailConfirmed,
   isAdmin,
+  isBanned,
 }: ProfileHeaderProps) {
   return (
     <div className="flex items-center gap-6 mb-8">
@@ -19,11 +21,15 @@ export default function ProfileHeader({
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1">
           {username}
-          {isAdmin && (
+          {isBanned ? (
+            <span className="px-2 mx-2 py-0.5 bg-red-100 text-red-800 rounded-full text-sm">
+              Banned
+            </span>
+          ) : isAdmin ? (
             <span className="px-2 mx-2 py-0.5 bg-red-100 text-red-800 rounded-full text-sm">
               Admin
             </span>
-          )}
+          ) : null}
         </h1>
         <div className="flex items-center gap-2">
           <span className="text-gray-500">{email}</span>
