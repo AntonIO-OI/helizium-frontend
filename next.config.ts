@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
     '@stencil/core',
     'ionicons',
   ],
+  webpack: (config) => {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+    console.info = () => {};
+
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -62,6 +62,8 @@ export default function ProfileActions({
   const [isConfirmEmailModalOpen, setConfirmEmailModalOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const validatePassword = (value: string) => {
     const PASSWORD_REGEX =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
@@ -174,6 +176,7 @@ export default function ProfileActions({
     setMfaEnabled(user.mfa);
     setTotpEnabled(user.totp);
     setIsBanned(user.banned);
+    setIsAdmin(user.admin);
   }, [setEmailConfirmed, setMfaEnabled, setTotpEnabled, setIsBanned]);
 
   const openTokenModal = () => {
@@ -307,7 +310,8 @@ export default function ProfileActions({
     const newSecret = Array(16)
       .fill(null)
       .map(() => Math.random().toString(36).substring(2, 3))
-      .join('');
+      .join('')
+      .toUpperCase();
     setTotpSecret(newSecret);
     setTotpModalOpen(true);
   };
@@ -367,14 +371,18 @@ export default function ProfileActions({
           disabled={!emailConfirmed}
           fullWidth
         />
-        <ProfileButton
-          label="Create Category"
-          variant="primary"
-          icon={LucidePlus}
-          onClick={() => router.push('/category/create')}
-          disabled={!emailConfirmed}
-          fullWidth
-        />
+
+        {isAdmin && (
+          <ProfileButton
+            label="Create Category"
+            variant="primary"
+            icon={LucidePlus}
+            onClick={() => router.push('/category/create')}
+            disabled={!emailConfirmed}
+            fullWidth
+          />
+        )}
+
         <ProfileButton
           label="View Taken"
           variant="primary"
@@ -394,7 +402,7 @@ export default function ProfileActions({
           />
         )}
 
-        {!isBanned && (
+        {false && !isBanned && (
           <ProfileButton
             label="Delete Account"
             variant="danger"

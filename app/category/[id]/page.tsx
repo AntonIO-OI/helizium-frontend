@@ -38,7 +38,7 @@ export default function CategoryPage({ params }: { params: Promise<{ id: string 
   if (!category) return null;
 
   const handleCategoryDeleted = () => {
-    router.push('/categories');
+    router.push('/categories/manage');
   };
 
   return (
