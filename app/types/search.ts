@@ -26,6 +26,7 @@ export interface Task {
   rejectionMessage: string | null;
   contractSignature?: ContractSignature;
   performerContractSignature?: ContractSignature;
+  performerRating?: number;
 }
 
 export enum TaskStatus {
@@ -49,6 +50,7 @@ export interface User {
   username: string;
   rating: number;
   completedTasks: number;
+  reviewsCount: number;
   joinedDate: string;
   admin: boolean;
   banned: boolean;

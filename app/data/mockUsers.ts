@@ -12,6 +12,7 @@ export const saveTestUsers = () => {
       completedTasks: 156,
       joinedDate: '2023-01-15',
       email: 'AlexDev@gmail.com',
+      reviewsCount: 10,
       emailConfirmed: true,
       password: 'asdf1234A!',
       admin: true,
@@ -27,6 +28,7 @@ export const saveTestUsers = () => {
       joinedDate: '2022-11-20',
       email: 'SarahDesigner@gmail.com',
       emailConfirmed: true,
+      reviewsCount: 10,
       password: 'asdf1234A!',
       admin: false,
       mfa: false,
@@ -42,6 +44,7 @@ export const saveTestUsers = () => {
       email: 'MikeCode@gmail.com',
       emailConfirmed: true,
       password: 'asdf1234A!',
+      reviewsCount: 10,
       admin: false,
       mfa: false,
       totp: false,
@@ -102,3 +105,22 @@ export const addUser = (user: User) => {
   users.push(user);
   localStorage.setItem('users', JSON.stringify(users));
 };
+
+export function updateUser(updatedUser: User): boolean {
+  const usersFromLocalStorage = localStorage.getItem('users');
+
+  if (!usersFromLocalStorage) {
+    return false;
+  }
+
+  const users: User[] = JSON.parse(usersFromLocalStorage);
+  const index = users.findIndex(user => user.id === updatedUser.id);
+
+  if (index === -1) {
+    return false;
+  }
+
+  users[index] = updatedUser;
+  localStorage.setItem('users', JSON.stringify(users));
+  return true;
+}

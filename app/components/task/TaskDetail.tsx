@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Task, User, TaskStatus } from '@/app/types/search';
 import { getChildCategoryIds } from '@/app/utils/categories';
-import { getSearchData } from '@/app/utils/storage';
+import { getSearchData, saveTasks } from '@/app/utils/storage';
 import {
   Calendar,
   DollarSign,
@@ -33,6 +33,8 @@ import ReportButton from './ReportButton';
 import { signTaskContract } from '@/app/utils/contractOperations';
 import ProfileButton from '../profile/ProfileButton';
 import PersonalChat from '../PersonalChat';
+import { updateUserRating } from '@/app/utils/userManagement';
+import RatingModal from './RatingModal';
 
 interface TaskDetailProps {
   task: Task;
@@ -122,6 +124,7 @@ export default function TaskDetail({
   const [showChatModal, setShowChatModal] = useState(false);
   const category = categories.find((cat) => cat.id === task.category);
   const router = useRouter();
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const approvedPerformer = currentTask.performerId
     ? getUser(currentTask.performerId)
@@ -211,6 +214,7 @@ export default function TaskDetail({
 
       if (updatedTask) {
         setCurrentTask(updatedTask);
+        setShowRatingModal(true);
       }
     } catch (err: any) {
     }
@@ -252,6 +256,25 @@ export default function TaskDetail({
         router.push('/recent');
       }
     } catch (err) {}
+  };
+
+  const handleRatingSubmit = (rating: number) => {
+    if (currentTask.performerId) {
+      updateUserRating(currentTask.performerId, rating);
+      
+      const updatedTask = {
+        ...currentTask,
+        performerRating: rating
+      };
+      
+      const updatedTasks = tasks.map(t => 
+        t.id === currentTask.id ? updatedTask : t
+      );
+      saveTasks(updatedTasks);
+      
+      setCurrentTask(updatedTask);
+    }
+    setShowRatingModal(false);
   };
 
   const canApply =
@@ -735,6 +758,35 @@ export default function TaskDetail({
             </div>
           </div>
         )}
+
+      {showRatingModal && currentTask.performerId && (
+        <RatingModal
+          onSubmit={handleRatingSubmit}
+          onClose={() => setShowRatingModal(false)}
+          performerName={getUser(currentTask.performerId)?.username || 'Freelancer'}
+        />
+      )}
+
+      {currentTask.completed && currentTask.performerId === currentUser?.id && (
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-sm text-gray-600">Rating for this task: </span>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                className={`w-4 h-4 ${
+                  star <= (currentTask.performerRating || 0)
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-gray-300'
+                }`}
+              />
+            ))}
+            {!currentTask.performerRating && (
+              <span className="text-sm text-gray-500 ml-1">Not rated yet</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
