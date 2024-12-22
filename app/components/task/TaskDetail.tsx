@@ -175,11 +175,31 @@ export default function TaskDetail({
     }
   };
 
-  const handleCompleteTask = () => {
+  const handleCompleteTask = async () => {
     if (!currentUser) return;
-    const updatedTask = completeTask(task.id, currentUser.id);
-    if (updatedTask) {
-      setCurrentTask(updatedTask);
+    
+    try {
+      const contractResult = await signTaskContract(
+        'complete', 
+        currentTask.id, 
+        currentTask.title,
+        currentTask.performerId || undefined
+      );
+
+      if (!contractResult.success) {
+        return;
+      }
+
+      const updatedTask = completeTask(
+        currentTask.id, 
+        currentUser.id,
+        contractResult.signature
+      );
+
+      if (updatedTask) {
+        setCurrentTask(updatedTask);
+      }
+    } catch (err: any) {
     }
   };
 

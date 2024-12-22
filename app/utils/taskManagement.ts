@@ -120,18 +120,27 @@ export function submitWorkResult(taskId: number, userId: number, workResult: str
   return updatedTask;
 }
 
-export function completeTask(taskId: number, authorId: number): Task | null {
+export function completeTask(
+  taskId: number, 
+  authorId: number,
+  contractSignature: ContractSignature
+): Task | null {
   const { tasks } = getSearchData();
   const task = tasks.find(t => t.id === taskId);
   
-  if (!task || task.authorId !== authorId || !task.workResult || task.completed) {
+  if (!task || 
+      task.authorId !== authorId || 
+      !task.workResult || 
+      task.completed || 
+      !contractSignature) {
     return null;
   }
 
   const updatedTask = updateTaskStatus({
     ...task,
     completed: true,
-    status: TaskStatus.COMPLETED
+    status: TaskStatus.COMPLETED,
+    contractSignature: contractSignature
   });
 
   const updatedTasks = tasks.map(t => 

@@ -26,6 +26,16 @@ export function generateContractMessage(contractData: ContractMessage): string {
              `Freelancer: ${performer?.username || 'Unknown'} (ID: ${performerId})\n` +
              `Timestamp: ${timestamp}\n\n` +
              `By signing this message, you agree to accept this freelancer for the task.`;
+    })(),
+
+    complete: (() => {
+      const performer = performerId ? getUser(performerId) : null;
+      return `Task Completion Contract\n\n` +
+             `Task #${taskId}: ${taskTitle}\n` +
+             `Action: Task Completion\n` +
+             `Freelancer: ${performer?.username || 'Unknown'} (ID: ${performerId})\n` +
+             `Timestamp: ${timestamp}\n\n` +
+             `By signing this message, you confirm that the task has been completed satisfactorily and agree to release payment.`;
     })()
   };
 
