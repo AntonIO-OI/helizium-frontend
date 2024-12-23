@@ -1,4 +1,4 @@
-export type ContractAction = 'create' | 'delete' | 'accept' | 'complete';
+export type ContractAction = 'create' | 'delete' | 'accept' | 'complete' | 'discard';
 
 export interface ContractSignature {
   signature: string;

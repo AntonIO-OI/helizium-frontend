@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Category, Task } from '../types/search';
 import { getSearchData } from './storage';
 

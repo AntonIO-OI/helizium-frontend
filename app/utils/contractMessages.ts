@@ -36,6 +36,20 @@ export function generateContractMessage(contractData: ContractMessage): string {
              `Freelancer: ${performer?.username || 'Unknown'} (ID: ${performerId})\n` +
              `Timestamp: ${timestamp}\n\n` +
              `By signing this message, you confirm that the task has been completed satisfactorily and agree to release payment.`;
+    })(),
+
+    discard: (() => {
+      const performer = performerId ? getUser(performerId) : null;
+      return (
+        `Task Freelancer discard Contract\n\n` +
+        `Task #${taskId}: ${taskTitle}\n` +
+        `Action: Task Freelacner Discard\n` +
+        `Freelancer: ${
+          performer?.username || 'Unknown'
+        } (ID: ${performerId})\n` +
+        `Timestamp: ${timestamp}\n\n` +
+        `By signing this message, you as admin confirm that you are discarding task freelancer and this action can not be undone.`
+      );
     })()
   };
 

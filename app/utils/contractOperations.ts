@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ethers } from 'ethers';
 import { ContractAction, ContractResult } from '../types/contracts';
 import { generateContractMessage } from './contractMessages';

@@ -164,6 +164,8 @@ export default function TaskPage({
                               commentAuthor.id === currentUser?.id
                                 ? 'font-semibold text-green-600'
                                 : commentAuthor.id === author.id
+                                ? 'font-semibold text-blue-800'
+                                : commentAuthor.admin
                                 ? 'font-semibold text-red-800'
                                 : 'font-semibold'
                             }
@@ -171,6 +173,8 @@ export default function TaskPage({
                             {commentAuthor.username}
                             {commentAuthor.id === author.id
                               ? ' (Author)'
+                              : commentAuthor.admin
+                              ? ' (Admin)'
                               : null}
                           </span>
                           <span className="text-sm text-gray-500">
@@ -179,11 +183,12 @@ export default function TaskPage({
                         </div>
 
                         {/* Comment Text */}
-                        <p className="mt-2">{comment.text}</p>
+                        <p className="my-2">{comment.text}</p>
                       </div>
 
                       {/* Delete button if the current user is the author of the comment */}
-                      {(currentUser?.id === comment.userId || currentUser?.admin) && (
+                      {(currentUser?.id === comment.userId ||
+                        currentUser?.admin) && (
                         <button
                           onClick={() => handleDeleteComment(comment.id)}
                           className="text-red-500 hover:text-red-700"

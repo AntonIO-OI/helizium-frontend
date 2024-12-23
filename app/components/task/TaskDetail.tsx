@@ -259,8 +259,19 @@ export default function TaskDetail({
     } catch (err) {}
   };
 
-  const handleDiscardFreelancer = () => {
+  const handleDiscardFreelancer = async () => {
     if (!currentUser) return;
+
+    try {
+      const contractResult = await signTaskContract(
+        'discard',
+        task.id,
+        task.title,
+      );
+      if (!contractResult.success || !contractResult.signature) {
+        return;
+      }
+    } catch (err) {}
 
     const updatedTask = discardFreelancer(task.id);
     if (updatedTask) {
