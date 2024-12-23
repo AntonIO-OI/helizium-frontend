@@ -41,7 +41,7 @@ export default function TaskItem({ task }: TaskItemProps) {
             {getStatusText(task.status)}
           </span>
         </div>
-        <p className="text-gray-600 mb-4">{task.content}</p>
+        <p className="text-gray-600 mb-4 truncate">{task.content}</p>
         <div className="flex justify-between items-center">
           <span className="text-gray-500">{task.date}</span>
           <span className="font-semibold">${task.price}</span>
