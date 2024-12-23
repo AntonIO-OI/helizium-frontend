@@ -25,6 +25,7 @@ import {
   completeTask,
   rejectWorkResult,
   deleteTask,
+  discardFreelancer,
 } from '@/app/utils/taskManagement';
 import { getStatusText } from '../search/TaskItem';
 import { getStatusColor } from '../search/TaskItem';
@@ -163,7 +164,7 @@ export default function TaskDetail({
         task.title,
         userId,
       );
-      if (!contractResult.success) {
+      if (!contractResult.success || !contractResult.signature) {
         return;
       }
 
@@ -203,7 +204,7 @@ export default function TaskDetail({
         currentTask.performerId || undefined,
       );
 
-      if (!contractResult.success) {
+      if (!contractResult.success || !contractResult.signature) {
         return;
       }
 
@@ -243,7 +244,7 @@ export default function TaskDetail({
         task.id,
         task.title,
       );
-      if (!contractResult.success) {
+      if (!contractResult.success || !contractResult.signature) {
         return;
       }
 
@@ -256,6 +257,17 @@ export default function TaskDetail({
         router.push('/recent');
       }
     } catch (err) {}
+  };
+
+  const handleDiscardFreelancer = () => {
+    if (!currentUser) return;
+
+    const updatedTask = discardFreelancer(task.id);
+    if (updatedTask) {
+      setCurrentTask(updatedTask);
+      setShowWorkForm(false);
+      setWorkResult('');
+    }
   };
 
   const handleRatingSubmit = (rating: number) => {
@@ -582,6 +594,20 @@ export default function TaskDetail({
           )}
         </div>
       )}
+
+      {currentUser?.admin &&
+        currentUser?.id !== currentTask.authorId &&
+        currentUser?.id !== currentTask.performerId &&
+        currentTask.performerId && (
+          <div className="space-y-4">
+            <button
+              onClick={handleDiscardFreelancer}
+              className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Discard freelancer
+            </button>
+          </div>
+        )}
 
       {similarTasks.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">

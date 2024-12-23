@@ -1,4 +1,5 @@
-import { Task, ContractSignature } from '../types/search';
+import { Task } from '../types/search';
+import { ContractSignature } from '../types/contracts';
 import { getSearchData, saveTasks } from './storage';
 import { updateTaskStatus } from './tasks';
 import { TaskStatus } from '../types/search';
@@ -115,6 +116,30 @@ export function submitWorkResult(taskId: number, userId: number, workResult: str
   const updatedTasks = tasks.map(t => 
     t.id === taskId ? updatedTask : t
   );
+
+  saveTasks(updatedTasks);
+  return updatedTask;
+}
+
+export function discardFreelancer(
+  taskId: number,
+): Task | null {
+  const { tasks } = getSearchData();
+  const task = tasks.find((t) => t.id === taskId);
+
+  if (!task) {
+    return null;
+  }
+
+  const updatedTask = updateTaskStatus({
+    ...task,
+    workResult: null,
+    performerId: null,
+    rejectionMessage: null,
+    status: TaskStatus.SEARCHING,
+  });
+
+  const updatedTasks = tasks.map((t) => (t.id === taskId ? updatedTask : t));
 
   saveTasks(updatedTasks);
   return updatedTask;
