@@ -79,13 +79,13 @@ export default function ReportButton({
         className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-2"
       >
         <Flag className="w-4 h-4" />
-        Report Task
+        Report
       </button>
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Report Task</h3>
+            <h3 className="text-lg font-semibold mb-4">Report</h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
