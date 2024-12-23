@@ -609,6 +609,7 @@ export default function TaskDetail({
       {currentUser?.admin &&
         currentUser?.id !== currentTask.authorId &&
         currentUser?.id !== currentTask.performerId &&
+        currentTask.status !== TaskStatus.COMPLETED &&
         currentTask.performerId && (
           <div className="space-y-4">
             <button
@@ -620,35 +621,10 @@ export default function TaskDetail({
           </div>
         )}
 
-      {similarTasks.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
-          <h2 className="text-xl font-semibold mb-6">Similar Tasks</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {similarTasks.map((similarTask) => (
-              <Link
-                href={`/task/${similarTask.id}`}
-                key={similarTask.id}
-                className="p-4 border rounded-lg hover:shadow-md transition group"
-              >
-                <h3 className="font-semibold mb-2 group-hover:text-gray-600">
-                  {similarTask.title}
-                </h3>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <DollarSign className="w-4 h-4" />
-                    <span>{similarTask.price}</span>
-                  </div>
-                  <span>{formatDate(similarTask.date)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       {(currentTask.workResult || currentTask.rejectionMessage) &&
         (currentUser?.id === currentTask.authorId ||
-          currentUser?.id === currentTask.performerId) && (
+          currentUser?.id === currentTask.performerId ||
+          currentUser?.admin) && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Work Status</h2>
@@ -832,6 +808,32 @@ export default function TaskDetail({
             </div>
           </div>
         )}
+
+        {similarTasks.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-6">Similar Tasks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {similarTasks.map((similarTask) => (
+              <Link
+                href={`/task/${similarTask.id}`}
+                key={similarTask.id}
+                className="p-4 border rounded-lg hover:shadow-md transition group"
+              >
+                <h3 className="font-semibold mb-2 group-hover:text-gray-600">
+                  {similarTask.title}
+                </h3>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-4 h-4" />
+                    <span>{similarTask.price}</span>
+                  </div>
+                  <span>{formatDate(similarTask.date)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
