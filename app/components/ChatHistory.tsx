@@ -1,119 +1,75 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import PersonalChat, { Message } from './PersonalChat';
-import { User } from '../types/search';
-
-interface ChatPreview {
-  contactId: number;
-  lastMessage: string;
-  lastMessageTime: string;
-  contactName: string;
-  highlight: boolean;
-}
+import PersonalChat from './PersonalChat';
+import { chatApi, ChatPreview } from '../lib/api/chat';
 
 interface ChatHistoryProps {
-  userId: number;
+  userId: string;
 }
 
-const ChatHistory: React.FC<ChatHistoryProps> = ({ userId }) => {
+const ChatHistory: React.FC<ChatHistoryProps> = () => {
   const [chats, setChats] = useState<ChatPreview[]>([]);
-  const [selectedContact, setSelectedContact] = useState<number>(0);
-  const [selectedContactUsername, setSelectedContactUsername] =
-    useState<string>('');
-  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string>('');
+  const [selectedUsername, setSelectedUsername] = useState<string>('');
+  const [showChat, setShowChat] = useState(false);
 
-  const refreshData = useCallback(() => {
-    const chatData = localStorage.getItem('personalChat');
-    const usersData = localStorage.getItem('users');
-
-    if (chatData && usersData) {
-      const messages: Message[] = JSON.parse(chatData);
-      const users: User[] = JSON.parse(usersData);
-
-      const userChats = messages
-        .filter(
-          (msg: { from: number; to: number }) =>
-            msg.from === userId || msg.to === userId,
-        )
-        .reduce((acc: Record<number, ChatPreview>, msg: Message) => {
-          const contactId = msg.from === userId ? msg.to : msg.from;
-          const contact = users.find((user) => user.id === contactId);
-
-          if (contact && !contact.banned) {
-            acc[contactId] = {
-              contactId,
-              contactName: contact.username,
-              lastMessage: msg.message,
-              lastMessageTime: msg.posted,
-              highlight: !msg.read && msg.from === contactId,
-            };
-          }
-
-          return acc;
-        }, {});
-
-      const chatsArray: ChatPreview[] = Object.values(userChats);
-
-      chatsArray.sort((a, b) => {
-        if (a.highlight !== b.highlight) {
-          return b.highlight ? 1 : -1;
-        }
-
-        return b.lastMessageTime.localeCompare(a.lastMessageTime);
-      });
-
-      setChats(chatsArray);
-    }
-  }, [userId]);
+  const refreshChats = useCallback(async () => {
+    const res = await chatApi.getChats();
+    if (res.data) setChats(res.data);
+  }, []);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    refreshChats();
+    const interval = setInterval(refreshChats, 10000);
+    return () => clearInterval(interval);
+  }, [refreshChats]);
 
-  if (chats.length === 0) {
-    return null;
-  }
+  if (chats.length === 0) return null;
 
   return (
     <div className="space-y-4">
       <PersonalChat
-        isVisible={showChatModal}
-        userId={userId}
-        contactId={selectedContact}
-        contactUsername={selectedContactUsername}
-        onClose={() => setShowChatModal(false)}
-        chatChangedCallback={() => refreshData()}
+        isVisible={showChat}
+        contactId={selectedContactId}
+        contactUsername={selectedUsername}
+        onClose={() => setShowChat(false)}
+        chatChangedCallback={refreshChats}
         readonly={false}
       />
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-2">Chat History</h2>
-
+        <h2 className="text-xl font-semibold mb-4">Chat History</h2>
         {chats.map((chat) => (
           <div
             key={chat.contactId}
-            className="flex justify-between items-center p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100"
+            className="flex justify-between items-center p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100 rounded"
             onClick={() => {
-              refreshData();
-              setSelectedContact(chat.contactId);
-              setSelectedContactUsername(chat.contactName);
-              setShowChatModal(true);
+              setSelectedContactId(chat.contactId);
+              setSelectedUsername(chat.contactUsername);
+              setShowChat(true);
+              refreshChats();
             }}
           >
             <div>
               <h3
-                className={`text-lg font-medium ${
-                  chat.highlight && 'text-red-600'
-                }`}
+                className={`text-lg font-medium ${chat.unreadCount > 0 ? 'text-red-600' : ''}`}
               >
-                {chat.contactName}
+                {chat.contactUsername}
+                {chat.unreadCount > 0 && (
+                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">
+                    {chat.unreadCount}
+                  </span>
+                )}
               </h3>
-              <p className="text-gray-500 text-sm truncate">
+              <p className="text-gray-500 text-sm truncate max-w-xs">
                 {chat.lastMessage}
               </p>
             </div>
-            <span className="text-gray-400 text-xs">
-              {chat.lastMessageTime}
+            <span className="text-gray-400 text-xs flex-shrink-0 ml-2">
+              {new Date(chat.lastMessageTime).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </span>
           </div>
         ))}

@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { use } from 'react';
-import { Task, User, Comment } from '@/app/types/search';
-import { getSearchData, delay, saveComments } from '@/app/utils/storage';
-import { getUser } from '@/app/data/mockUsers';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import TaskDetail from '@/app/components/task/TaskDetail';
 import { AlertCircle } from 'lucide-react';
 import ChatModal from '@/app/components/ChatModal';
-import { formatDate } from '@/app/utils/formatDate';
+import { tasksApi, Task, PublicUser } from '@/app/lib/api/tasks';
+import { commentsApi, Comment } from '@/app/lib/api/comments';
+import { useAuth } from '@/app/lib/hooks/useAuth';
+import TaskDetail from '@/app/components/task/TaskDetail';
 import ProfileAvatar from '@/app/components/profile/ProfileAvatar';
 
 export default function TaskPage({
@@ -18,75 +17,52 @@ export default function TaskPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const resolvedParams = use(params);
+  const { userId, isAdmin, isEmailConfirmed, isBanned, isAuthenticated } =
+    useAuth();
   const [task, setTask] = useState<Task | null>(null);
-  const [author, setAuthor] = useState<User | null>(null);
+  const [author, setAuthor] = useState<PublicUser | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const resolvedParams = use(params);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-
   const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user: User = users.find((user: User) => user.id === +userId);
-      if (user) {
-        setCurrentUser(user);
-      }
-    }
-  }, [setCurrentUser]);
-
-  useEffect(() => {
-    const fetchTask = async () => {
+    const load = async () => {
       setIsLoading(true);
-      await delay(400);
-
-      const taskId = parseInt(resolvedParams.id);
-      const data = getSearchData();
-      const foundTask = data.tasks.find((t) => t.id === taskId);
-
-      if (foundTask) {
-        setTask(foundTask);
-        const taskAuthor = getUser(foundTask.authorId);
-        if (taskAuthor) {
-          setAuthor(taskAuthor);
+      const res = await tasksApi.getTask(resolvedParams.id);
+      if (res.data) {
+        setTask(res.data);
+        if (res.data.author) {
+          setAuthor(res.data.author);
+        } else {
+          const authorRes = await tasksApi.getPublicUser(res.data.authorId);
+          setAuthor(authorRes.data ?? null);
         }
-
-        const taskComments = data.comments.filter(
-          (comment) => comment.taskId === taskId,
-        );
-        setComments(taskComments);
       }
-
+      const commentsRes = await commentsApi.getComments(resolvedParams.id);
+      setComments(commentsRes.data ?? []);
       setIsLoading(false);
     };
-
-    fetchTask();
+    load();
   }, [resolvedParams.id]);
 
-  const handleCommentSubmit = (commentText: string) => {
-    if (!currentUser?.id || !commentText) return;
-
-    const newComment: Comment = {
-      id: Date.now(),
-      userId: currentUser.id,
-      taskId: task!.id,
-      text: commentText,
-      createdAt: formatDate(new Date(), true),
-    };
-
-    saveComments([...comments, newComment]);
-    setComments((prevComments) => [...prevComments, newComment]);
-    setCommentText('');
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim() || !task) return;
+    const res = await commentsApi.createComment(task.id, commentText);
+    if (res.data) {
+      setComments((prev) => [...prev, res.data!]);
+      setCommentText('');
+    }
   };
 
-  const handleDeleteComment = (commentId: number) => {
-    saveComments(comments.filter((comment) => comment.id !== commentId));
-    setComments((prevComments) =>
-      prevComments.filter((comment) => comment.id !== commentId),
-    );
+  const handleDeleteComment = async (commentId: string) => {
+    if (!task) return;
+    await commentsApi.deleteComment(task.id, commentId);
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
+
+  const handleTaskUpdate = (updatedTask: Task) => {
+    setTask(updatedTask);
   };
 
   if (isLoading) {
@@ -95,9 +71,8 @@ export default function TaskPage({
         <Header />
         <main className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
-            <div className="h-64 bg-white rounded-lg"></div>
-            <div className="h-24 bg-white rounded-lg"></div>
-            <div className="h-48 bg-white rounded-lg"></div>
+            <div className="h-64 bg-white rounded-lg" />
+            <div className="h-24 bg-white rounded-lg" />
           </div>
         </main>
         <Footer />
@@ -113,10 +88,6 @@ export default function TaskPage({
           <div className="max-w-md mx-auto text-center">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">Task Not Found</h1>
-            <p className="text-gray-600 mb-8">
-              The task you&apos;re looking for doesn&apos;t exist or has been
-              removed.
-            </p>
             <a
               href="/search"
               className="inline-block bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
@@ -130,82 +101,76 @@ export default function TaskPage({
     );
   }
 
+  const currentUserPublic: PublicUser | null = userId
+    ? { id: userId, username: '', rating: 0, joinedDate: '', isBanned, isAdmin }
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-4xl mx-auto">
-          <TaskDetail task={task} author={author} currentUser={currentUser} />
+          <TaskDetail
+            task={task}
+            author={author}
+            currentUser={currentUserPublic}
+            onTaskUpdate={handleTaskUpdate}
+          />
 
-          {/* Comments List */}
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">
               Comments: {comments.length}
             </h2>
             {comments.length > 0 ? (
-              comments.map((comment) => {
-                const commentAuthor = getUser(comment.userId);
-                if (!commentAuthor) return null;
-
-                return (
-                  <div key={comment.id} className="border-t pt-4">
-                    <div className="flex items-start space-x-4">
-                      {/* Profile Avatar */}
-                      <ProfileAvatar
-                        initial={commentAuthor.username.charAt(0).toUpperCase()}
-                        size="sm"
-                      />
-
-                      <div className="flex-1">
-                        {/* Username and Date */}
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={
-                              commentAuthor.id === currentUser?.id
-                                ? 'font-semibold text-green-600'
-                                : commentAuthor.id === author.id
+              comments.map((comment) => (
+                <div key={comment.id} className="border-t pt-4">
+                  <div className="flex items-start space-x-4">
+                    <ProfileAvatar
+                      initial={comment.username.charAt(0).toUpperCase()}
+                      size="sm"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={
+                            comment.userId === userId
+                              ? 'font-semibold text-green-600'
+                              : comment.isAuthor
                                 ? 'font-semibold text-blue-800'
-                                : commentAuthor.admin
-                                ? 'font-semibold text-red-800'
-                                : 'font-semibold'
-                            }
-                          >
-                            {commentAuthor.username}
-                            {commentAuthor.id === author.id
-                              ? ' (Author)'
-                              : commentAuthor.admin
+                                : comment.isAdmin
+                                  ? 'font-semibold text-red-800'
+                                  : 'font-semibold'
+                          }
+                        >
+                          {comment.username}
+                          {comment.isAuthor
+                            ? ' (Author)'
+                            : comment.isAdmin
                               ? ' (Admin)'
                               : null}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {comment.createdAt}
-                          </span>
-                        </div>
-
-                        {/* Comment Text */}
-                        <p className="my-2">{comment.text}</p>
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {comment.createdAt}
+                        </span>
                       </div>
-
-                      {/* Delete button if the current user is the author of the comment */}
-                      {(currentUser?.id === comment.userId ||
-                        currentUser?.admin) && (
-                        <button
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Delete
-                        </button>
-                      )}
+                      <p className="my-2">{comment.text}</p>
                     </div>
+                    {(userId === comment.userId || isAdmin) && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
-                );
-              })
+                </div>
+              ))
             ) : (
-              <p>No comments yet.</p>
+              <p className="text-gray-500">No comments yet.</p>
             )}
 
-            {/* Comment Form */}
-            {currentUser?.emailConfirmed ? (
+            {isAuthenticated && isEmailConfirmed ? (
               <div className="mt-8">
                 <h2 className="text-xl font-semibold mb-4">Add a Comment</h2>
                 <textarea
@@ -214,9 +179,9 @@ export default function TaskPage({
                   rows={4}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                ></textarea>
+                />
                 <button
-                  onClick={() => handleCommentSubmit(commentText)}
+                  onClick={handleCommentSubmit}
                   className="bg-black text-white px-6 py-2 rounded-lg"
                 >
                   Post Comment
@@ -225,7 +190,7 @@ export default function TaskPage({
             ) : (
               <div className="mt-8">
                 <b>
-                  {currentUser?.id ? 'Confirm email' : 'Sign up'} to write
+                  {isAuthenticated ? 'Confirm email' : 'Sign up'} to write
                   comments
                 </b>
               </div>

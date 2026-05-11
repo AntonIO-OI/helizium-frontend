@@ -1,114 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ChatModal from './components/ChatModal';
-import { saveTestUsers } from './data/mockUsers';
+import Link from 'next/link';
 
 export default function Home() {
   const [showScroll, setShowScroll] = useState(false);
 
-  const handleScroll = () => {
-    if (window.scrollY > 300) {
-      setShowScroll(true);
-    } else {
-      setShowScroll(false);
-    }
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   useEffect(() => {
+    const handleScroll = () => setShowScroll(window.scrollY > 300);
     window.addEventListener('scroll', handleScroll);
-    saveTestUsers();
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const features = [
+    {
+      title: 'ETH Escrow',
+      description: 'Smart contract holds funds until work is approved.',
+      icon: '🔒',
+    },
+    {
+      title: 'Ethereum Payments',
+      description: 'Secure, decentralized payments via MetaMask.',
+      icon: '⚡',
+    },
+    {
+      title: 'MFA Security',
+      description: 'Email OTP and TOTP two-factor authentication.',
+      icon: '🛡️',
+    },
+    {
+      title: 'API Tokens',
+      description: 'Integrate with Helizium using secure API tokens.',
+      icon: '🔑',
+    },
+    {
+      title: 'Task Management',
+      description: 'Full workflow from posting to completion.',
+      icon: '📋',
+    },
+    {
+      title: 'Rating System',
+      description: 'Rate freelancers after task completion.',
+      icon: '⭐',
+    },
+    {
+      title: 'Private Chat',
+      description: 'Real-time messaging between clients and freelancers.',
+      icon: '💬',
+    },
+    {
+      title: 'Admin Tools',
+      description: 'Reports, bans, and category management.',
+      icon: '⚙️',
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
 
       <main className="flex-grow flex flex-col items-center justify-center text-center px-4 sm:px-6 py-8 sm:py-12 bg-gradient-to-b from-gray-50 to-white">
-        <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-800 leading-tight max-w-4xl mt-16 sm:mt-22 mb-4 sm:mb-6">
+        <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-800 leading-tight max-w-4xl mt-16 mb-4">
           Revolutionizing Payments with{' '}
           <span className="text-black underline">Ethereum</span>
         </h2>
         <p className="text-gray-600 text-lg max-w-2xl mb-8">
-          Welcome to Helizium, the ultimate freelancing platform powered by
-          Ethereum. Fast, secure, and decentralized transactions redefine how
-          you work and earn.
+          Welcome to Helizium — the Ethereum-powered freelance platform where
+          smart contracts secure every transaction.
         </p>
-        <div className="flex gap-6">
-          <a href="/signup">
+        <div className="flex gap-6 flex-wrap justify-center">
+          <Link href="/signup">
             <button className="px-8 py-4 bg-black text-white rounded-lg shadow-lg hover:bg-gray-800 transition">
               Get Started
             </button>
-          </a>
-          <a href="/signup">
+          </Link>
+          <Link href="/recent">
             <button className="px-8 py-4 bg-gray-200 text-black rounded-lg shadow-lg hover:bg-gray-300 transition">
-              Learn More
+              Browse Tasks
             </button>
-          </a>
+          </Link>
         </div>
       </main>
 
       <section className="py-16 bg-gray-50">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[
-            {
-              title: 'Low Transaction Fees',
-              description:
-                'Helizium ensures minimal fees, making your earnings more rewarding.',
-              icon: '💰',
-            },
-            {
-              title: 'Powered by Ethereum',
-              description:
-                'Enjoy secure and decentralized payments for every project.',
-              icon: '⚡',
-            },
-            {
-              title: 'MFA Authentication',
-              description:
-                'Protect your account with advanced security options.',
-              icon: '🔒',
-            },
-            {
-              title: 'Blockchain Technology',
-              description:
-                'Your payments are securely managed using blockchain technology.',
-              icon: '🔗',
-            },
-            {
-              title: '24/7 Support',
-              description:
-                'Our team is available around the clock to assist you with any issues.',
-              icon: '📞',
-            },
-            {
-              title: 'Global Reach',
-              description:
-                'Connect with clients and freelancers from all over the world.',
-              icon: '🌍',
-            },
-            {
-              title: 'User Ratings',
-              description:
-                'Rate and review clients and freelancers to build trust in the community.',
-              icon: '⭐',
-            },
-            {
-              title: 'API Tokens',
-              description:
-                'Easily integrate with Helizium using secure API tokens.',
-              icon: '🔑',
-            },
-          ].map((feature, idx) => (
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-6">
+          {features.map((feature, idx) => (
             <div
               key={idx}
               className="p-8 bg-gray-100 text-center rounded-lg shadow-lg transform transition hover:scale-105"
@@ -124,32 +105,6 @@ export default function Home() {
       <section className="py-20 bg-gray-200">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-12">
-            Why Choose Helizium?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold mb-3">Innovative Technology</h3>
-              <p className="text-gray-600">
-                We leverage the latest blockchain technology to ensure your
-                transactions are secure and efficient.
-              </p>
-            </div>
-            <div className="text-center">
-              <h3 className="text-2xl font-bold mb-3">
-                User-Friendly Interface
-              </h3>
-              <p className="text-gray-600">
-                Our platform is designed with you in mind, offering an intuitive
-                and seamless experience.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-gray-100">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12">
             How Helizium Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -158,19 +113,19 @@ export default function Home() {
                 step: '1',
                 title: 'Create Your Account',
                 description:
-                  "Sign up and verify your identity to start using Helizium's services.",
+                  'Sign up, confirm your email, and set up MFA for maximum security.',
               },
               {
                 step: '2',
                 title: 'Connect Your Wallet',
                 description:
-                  'Link your Ethereum wallet to enable secure transactions.',
+                  'Link MetaMask to enable ETH escrow payments for tasks.',
               },
               {
                 step: '3',
-                title: 'Start Working',
+                title: 'Post or Take Tasks',
                 description:
-                  'Find projects or post your own and begin earning with crypto payments.',
+                  'Clients post tasks with ETH budget. Freelancers apply and get paid automatically on approval.',
               },
             ].map((item, idx) => (
               <div key={idx} className="text-center">
@@ -200,7 +155,7 @@ export default function Home() {
               },
               {
                 quote:
-                  'The security and speed of transactions are unmatched. Highly recommended!',
+                  'The smart contract escrow gives me peace of mind. Payments are instant on approval.',
                 author: 'Michael Chen',
                 role: 'Web Developer',
               },
@@ -210,13 +165,13 @@ export default function Home() {
                 author: 'Emma Williams',
                 role: 'Content Writer',
               },
-            ].map((testimonial, idx) => (
+            ].map((t, idx) => (
               <div key={idx} className="bg-gray-50 p-8 rounded-lg shadow-lg">
-                <p className="text-gray-600 mb-4">
-                  &quot;{testimonial.quote}&quot;
+                <p className="text-gray-600 mb-4 italic">
+                  &quot;{t.quote}&quot;
                 </p>
-                <p className="font-bold">{testimonial.author}</p>
-                <p className="text-gray-500">{testimonial.role}</p>
+                <p className="font-bold">{t.author}</p>
+                <p className="text-gray-500">{t.role}</p>
               </div>
             ))}
           </div>
@@ -229,20 +184,20 @@ export default function Home() {
             Ready to Start Your Journey?
           </h2>
           <p className="text-gray-400 mb-8">
-            Join thousands of freelancers who trust Helizium for secure crypto
-            payments.
+            Join freelancers who trust Helizium for secure crypto payments.
           </p>
-          <button className="px-8 py-4 bg-white text-black rounded-lg shadow-lg hover:bg-gray-200 transition">
-            Get Started Now
-          </button>
+          <Link href="/signup">
+            <button className="px-8 py-4 bg-white text-black rounded-lg shadow-lg hover:bg-gray-200 transition">
+              Get Started Now
+            </button>
+          </Link>
         </div>
       </section>
 
       {showScroll && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-4 right-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
-          aria-label="Scroll to top"
+          className="fixed bottom-4 right-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition z-40"
         >
           ↑
         </button>

@@ -4,120 +4,96 @@ import InputField from '../components/InputField';
 import AuthLayout from '../components/AuthLayout';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { delay } from '../utils/storage';
 import Toast from '../components/Toast';
+import { authApi } from '../lib/api/auth';
 
 export default function MFA() {
   const [totpEnabled, setTotpEnabled] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
   const [emailCodeSent, setEmailCodeSent] = useState(false);
   const [emailCode, setEmailCode] = useState('');
-  const [username, setUsername] = useState('');
   const [totpCode, setTotpCode] = useState('');
-  const [randomCode, setRandomCode] = useState('');
-
+  const [userId, setUserId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: 'error' | 'success' | '';
-  }>({ message: '', type: '' });
-
+  }>({
+    message: '',
+    type: '',
+  });
   const router = useRouter();
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      router.push('/login');
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((user: { id: number }) => user.id === +userId);
-
-    if (!user.mfa) {
-      router.push('/profile');
-      return;
-    }
-
-    if (user.totp) {
-      setTotpEnabled(true);
-    }
-
-    setEmail(user.email);
-    setUsername(user.username);
-  }, [router, setTotpEnabled, setEmail]);
-
-  const generateRandomCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit random code
-  };
-
-  const handleSendEmailCode = async () => {
-    if (!email) {
-      setToast({ message: 'Email not found', type: 'error' });
-      return;
-    }
-
-    const code = generateRandomCode();
-    setRandomCode(code);
-
-    try {
-      const response = await fetch('/api/mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          template: 'mfa.mail',
-          context: {
-            appName: 'Helizium',
-            otp: code,
-            username,
-            url: 'http://localhost:3001/profile?mfaToken=' + code,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email');
+    const fetchMfaInfo = async () => {
+      const infoRes = await authApi.info();
+      if (infoRes.error || !infoRes.data) {
+        router.push('/login');
+        return;
       }
 
-      setEmailCodeSent(true);
-      setToast({ message: 'Email code sent successfully', type: 'success' });
-    } catch (error) {
-      console.error(error);
-      setToast({ message: 'Error sending email code', type: 'error' });
+      const limits = infoRes.data.limits;
+      if (limits !== 'MFA_REQUIRED') {
+        router.push('/profile');
+        return;
+      }
+
+      setUserId(infoRes.data.userId);
+
+      const mfaRes = await authApi.getMfa();
+      if (mfaRes.data) {
+        setTotpEnabled(mfaRes.data.methods.includes('TOTP'));
+      }
+    };
+    fetchMfaInfo();
+  }, [router]);
+
+  const handleSendEmailCode = async () => {
+    setIsLoading(true);
+    const res = await authApi.sendEmailMfaCode();
+    setIsLoading(false);
+
+    if (res.error) {
+      setToast({ message: res.error, type: 'error' });
+      return;
     }
+    setEmailCodeSent(true);
+    setToast({ message: 'Email code sent', type: 'success' });
   };
 
   const handleMfaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    if (
-      emailCodeSent &&
-      (!emailCode || emailCode !== randomCode) &&
-      (!totpCode || totpCode.endsWith(' '))
-    ) {
-      setToast({ message: 'Invalid email code', type: 'error' });
+    if (emailCodeSent && emailCode) {
+      const res = await authApi.confirmEmailMfaCode(userId, emailCode);
+      setIsLoading(false);
+      if (res.error) {
+        setToast({ message: res.error, type: 'error' });
+        return;
+      }
+      router.push('/profile');
       return;
     }
 
-    if (!emailCodeSent && !totpEnabled) {
-      setToast({ message: 'You did not send the confirmation code', type: 'error' });
+    if (totpEnabled && totpCode) {
+      const res = await authApi.confirmTotp(totpCode);
+      setIsLoading(false);
+      if (res.error) {
+        setToast({ message: res.error, type: 'error' });
+        return;
+      }
+      router.push('/profile');
       return;
     }
 
-    if (!emailCodeSent && (!totpCode || totpCode.endsWith(' '))) {
-      setToast({ message: 'Invalid TOTP code', type: 'error' });
-      return;
-    }
-
-    await delay(400);
-
-    router.push('/profile');
+    setIsLoading(false);
+    setToast({ message: 'Please provide a verification code', type: 'error' });
   };
 
   return (
     <AuthLayout
       title="MFA Required"
-      description="Pass MFA to sign in your Helizium account and enjoy seamless payments powered by Ethereum."
+      description="Pass MFA to sign in your Helizium account."
     >
       {toast.message && (
         <Toast
@@ -128,22 +104,22 @@ export default function MFA() {
       )}
       <form onSubmit={handleMfaSubmit}>
         {!emailCodeSent ? (
-          <div className="mb-4 sm:mb-6">
+          <div className="mb-6">
             <button
               type="button"
               onClick={handleSendEmailCode}
-              className="w-full bg-blue-600 text-white py-2.5 sm:py-3 rounded-md hover:bg-blue-700 transition text-sm sm:text-base"
+              disabled={isLoading}
+              className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
             >
-              Send Email Code to{' '}
-              {email && email.replace(/(.{2}).+(@.+)/, '$1***$2')}
+              {isLoading ? 'Sending...' : 'Send Email Code'}
             </button>
           </div>
         ) : (
-          <div className="mb-4 sm:mb-6">
+          <div className="mb-6">
             <InputField
               id="emailCode"
               type="text"
-              placeholder="Enter Email Code"
+              placeholder="Enter 6-digit email code"
               value={emailCode}
               onChange={(e) => setEmailCode(e.target.value)}
             />
@@ -153,15 +129,15 @@ export default function MFA() {
         {totpEnabled && (
           <>
             <div className="flex items-center my-4">
-              <div className="flex-grow border-t border-gray-300"></div>
+              <div className="flex-grow border-t border-gray-300" />
               <span className="mx-4 text-gray-500">OR</span>
-              <div className="flex-grow border-t border-gray-300"></div>
+              <div className="flex-grow border-t border-gray-300" />
             </div>
-            <div className="mb-4 sm:mb-6">
+            <div className="mb-6">
               <InputField
                 id="totpCode"
                 type="text"
-                placeholder="Enter TOTP Code"
+                placeholder="Enter TOTP code"
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value)}
               />
@@ -171,9 +147,10 @@ export default function MFA() {
 
         <button
           type="submit"
-          className="w-full bg-black text-white py-2.5 sm:py-3 rounded-md hover:bg-gray-800 transition text-sm sm:text-base"
+          disabled={isLoading}
+          className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition disabled:opacity-50"
         >
-          Confirm MFA
+          {isLoading ? 'Verifying...' : 'Confirm MFA'}
         </button>
       </form>
     </AuthLayout>

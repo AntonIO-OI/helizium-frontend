@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import { Copy, Wallet, ExternalLink } from 'lucide-react';
+import { Copy, Wallet, ExternalLink, AlertCircle } from 'lucide-react';
 
 export default function WalletSection() {
   const [account, setAccount] = useState<string | null>(null);
@@ -10,67 +10,44 @@ export default function WalletSection() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [networkName, setNetworkName] = useState<string>('');
   const [gasPrice, setGasPrice] = useState<string>('');
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const fetchEthPrice = async () => {
     try {
       const response = await fetch('/api/eth-price');
-      if (!response.ok) {
-        throw new Error('Failed to fetch price');
-      }
+      if (!response.ok) throw new Error('Failed to fetch price');
       const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      return data.ethereum.usd;
-    } catch (err) {
-      console.error('Failed to fetch ETH price:', err);
+      if (data.error) throw new Error(data.error);
+      return data.ethereum?.usd ?? null;
+    } catch {
       return null;
     }
   };
 
-  const updateBalanceUsd = useCallback(
-    async (ethBalance: string) => {
-      const ethPrice = await fetchEthPrice();
-      if (ethPrice) {
-        const usdBalance = parseFloat(ethBalance) * ethPrice;
-        setBalanceUsd(usdBalance.toFixed(2));
-      }
-    },
-    [setBalanceUsd],
-  );
-
-  const connectWallet = async () => {
-    try {
-      if (!window.ethereum) {
-        setError('Please install MetaMask to connect your wallet');
-        return;
-      }
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-
-      if (accounts.length > 0) {
-        setAccount(accounts[0]);
-        const balance = await provider.getBalance(accounts[0]);
-        const ethBalance = ethers.formatEther(balance);
-        setBalance(ethBalance);
-        await updateBalanceUsd(ethBalance);
-
-        const network = await provider.getNetwork();
-        setNetworkName(network.name);
-
-        const feeData = await provider.getFeeData();
-        setGasPrice(ethers.formatUnits(feeData.gasPrice || 0, 'gwei'));
-
-        setError(null);
-        localStorage.setItem('walletConnected', 'true');
-        window.ethereum.on('accountsChanged', handleAccountsChanged);
-      }
-    } catch (err) {
-      setError('Failed to connect wallet');
-      console.error(err);
+  const updateBalanceUsd = useCallback(async (ethBalance: string) => {
+    const ethPrice = await fetchEthPrice();
+    if (ethPrice) {
+      setBalanceUsd((parseFloat(ethBalance) * ethPrice).toFixed(2));
     }
-  };
+  }, []);
+
+  const loadWalletData = useCallback(
+    async (address: string) => {
+      if (!window.ethereum) return;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const bal = await provider.getBalance(address);
+      const ethBalance = ethers.formatEther(bal);
+      setBalance(ethBalance);
+      await updateBalanceUsd(ethBalance);
+
+      const network = await provider.getNetwork();
+      setNetworkName(network.name);
+
+      const feeData = await provider.getFeeData();
+      setGasPrice(ethers.formatUnits(feeData.gasPrice || 0, 'gwei'));
+    },
+    [updateBalanceUsd],
+  );
 
   const handleAccountsChanged = useCallback(
     async (accounts: string[]) => {
@@ -78,71 +55,70 @@ export default function WalletSection() {
         setAccount(null);
         setBalance(null);
         setBalanceUsd(null);
-        localStorage.removeItem('walletConnected');
-      } else if (accounts[0] !== account) {
+        sessionStorage.removeItem('walletConnected');
+      } else {
         setAccount(accounts[0]);
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const balance = await provider.getBalance(accounts[0]);
-        const ethBalance = ethers.formatEther(balance);
-        setBalance(ethBalance);
-        await updateBalanceUsd(ethBalance);
+        await loadWalletData(accounts[0]);
       }
     },
-    [account, updateBalanceUsd],
+    [loadWalletData],
   );
 
-  const copyAddress = async () => {
-    if (account) {
-      await navigator.clipboard.writeText(account);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      setError('Please install MetaMask to connect your wallet');
+      return;
+    }
+    setIsConnecting(true);
+    setError(null);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send('eth_requestAccounts', []);
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+        await loadWalletData(accounts[0]);
+        sessionStorage.setItem('walletConnected', 'true');
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+      }
+    } catch (err: any) {
+      if (err.code === 4001) setError('You rejected the connection request');
+      else setError('Failed to connect wallet');
+    } finally {
+      setIsConnecting(false);
     }
   };
 
   useEffect(() => {
-    const checkConnection = async () => {
-      const shouldConnect = localStorage.getItem('walletConnected') === 'true';
-
-      if (shouldConnect && window.ethereum) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        try {
-          const accounts = await provider.send('eth_accounts', []);
-          if (accounts.length > 0) {
-            setAccount(accounts[0]);
-            const balance = await provider.getBalance(accounts[0]);
-            const ethBalance = ethers.formatEther(balance);
-            setBalance(ethBalance);
-            await updateBalanceUsd(ethBalance);
-
-            const network = await provider.getNetwork();
-            setNetworkName(network.name);
-
-            const feeData = await provider.getFeeData();
-            setGasPrice(ethers.formatUnits(feeData.gasPrice || 0, 'gwei'));
-
-            window.ethereum.on('accountsChanged', handleAccountsChanged);
-          }
-        } catch (err) {
-          console.error(err);
-        }
+    const check = async () => {
+      if (
+        sessionStorage.getItem('walletConnected') !== 'true' ||
+        !window.ethereum
+      )
+        return;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send('eth_accounts', []);
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+        await loadWalletData(accounts[0]);
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
       }
     };
-
-    checkConnection();
-
+    check();
     return () => {
-      if (window.ethereum && window.ethereum.removeListener) {
+      if (window.ethereum?.removeListener) {
         window.ethereum.removeListener(
           'accountsChanged',
           handleAccountsChanged,
         );
       }
     };
-  }, [handleAccountsChanged, updateBalanceUsd]);
+  }, [handleAccountsChanged, loadWalletData]);
 
-  const openEtherscan = () => {
+  const copyAddress = async () => {
     if (account) {
-      window.open(`https://etherscan.io/address/${account}`, '_blank');
+      await navigator.clipboard.writeText(account);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     }
   };
 
@@ -156,17 +132,19 @@ export default function WalletSection() {
       </div>
 
       {error && (
-        <div className="mb-4 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
-          {error}
+        <div className="mb-4 flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {!account ? (
         <button
           onClick={connectWallet}
-          className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2"
+          disabled={isConnecting}
+          className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition disabled:opacity-50"
         >
-          Connect Wallet
+          {isConnecting ? 'Connecting...' : 'Connect MetaMask Wallet'}
         </button>
       ) : (
         <div className="space-y-4">
@@ -187,12 +165,17 @@ export default function WalletSection() {
                 <button
                   onClick={copyAddress}
                   className="text-gray-400 hover:text-gray-600 transition"
-                  title="Copy address"
+                  title="Copy"
                 >
                   <Copy className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={openEtherscan}
+                  onClick={() =>
+                    window.open(
+                      `https://etherscan.io/address/${account}`,
+                      '_blank',
+                    )
+                  }
                   className="text-gray-400 hover:text-gray-600 transition"
                   title="View on Etherscan"
                 >
@@ -213,18 +196,17 @@ export default function WalletSection() {
                   {parseFloat(balance || '0').toFixed(4)} ETH
                 </span>
                 {balanceUsd && (
-                  <span className="text-gray-500">≈ ${balanceUsd}</span>
+                  <span className="text-gray-500 text-sm">≈ ${balanceUsd}</span>
                 )}
               </div>
             </div>
-
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
               <div className="text-sm text-gray-500 mb-1">Gas Price</div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">
                   {parseFloat(gasPrice || '0').toFixed(2)}
                 </span>
-                <span className="text-gray-500">Gwei</span>
+                <span className="text-gray-500 text-sm">Gwei</span>
               </div>
             </div>
           </div>

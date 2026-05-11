@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -9,129 +9,137 @@ import ProfileSection from '../components/profile/ProfileSection';
 import ProfileStats from '../components/profile/ProfileStats';
 import ProfileInfo from '../components/ProfileInfo';
 import ProfileActions from '../components/profile/ProfileActions';
-import { User } from '../types/search';
 import ChatModal from '../components/ChatModal';
 import WalletSection from '../components/profile/WalletSection';
-import { FolderCog, Shield } from 'lucide-react';
 import ChatHistory from '../components/ChatHistory';
+import { FolderCog, Shield } from 'lucide-react';
+import { useAuth } from '../lib/hooks/useAuth';
+import { usersApi } from '../lib/api/users';
 
 export default function Profile() {
-  const [userData, setUserData] = useState<User | null>(null);
   const router = useRouter();
+  const {
+    isLoading,
+    isAuthenticated,
+    user,
+    userId,
+    isAdmin,
+    isBanned,
+    isEmailConfirmed,
+    limits,
+    refresh,
+  } = useAuth();
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      router.push('/login');
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((user: { id: number }) => user.id === +userId);
-
-    if (user) {
-      setUserData(user);
-    } else {
-      localStorage.removeItem('userId');
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [router]);
+  }, [isLoading, isAuthenticated, router]);
 
-  const handleBioEdit = (newBio: string | undefined) => {
-    if (userData) {
-      const updatedUser = { ...userData, bio: newBio };
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUsers = users.map((user: User) =>
-        user.id === userData.id ? updatedUser : user,
-      );
+  const handleBioEdit = useCallback(
+    async (newBio: string) => {
+      await usersApi.updateBio(newBio);
+      await refresh();
+    },
+    [refresh],
+  );
 
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUserData(updatedUser);
-    }
-  };
+  const handleBioDelete = useCallback(async () => {
+    await usersApi.updateBio('');
+    await refresh();
+  }, [refresh]);
 
-  const handleIndustryEdit = (industry: string | undefined) => {
-    if (userData) {
-      const updatedUser = { ...userData, industry };
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUsers = users.map((user: User) =>
-        user.id === userData.id ? updatedUser : user,
-      );
+  const handleLocationEdit = useCallback(
+    async (location: string) => {
+      await usersApi.updateLocation(location);
+      await refresh();
+    },
+    [refresh],
+  );
 
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUserData(updatedUser);
-    }
-  };
+  const handleLocationDelete = useCallback(async () => {
+    await usersApi.updateLocation('');
+    await refresh();
+  }, [refresh]);
 
-  const handleLocationEdit = (location: string | undefined) => {
-    if (userData) {
-      const updatedUser = { ...userData, location };
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUsers = users.map((user: User) =>
-        user.id === userData.id ? updatedUser : user,
-      );
+  const handleIndustryEdit = useCallback(
+    async (industry: string) => {
+      await usersApi.updateIndustry(industry);
+      await refresh();
+    },
+    [refresh],
+  );
 
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUserData(updatedUser);
-    }
-  };
+  const handleIndustryDelete = useCallback(async () => {
+    await usersApi.updateIndustry('');
+    await refresh();
+  }, [refresh]);
 
-  if (!userData) {
-    return <div></div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-gray-400">Loading profile...</div>
+      </div>
+    );
   }
+
+  if (!isAuthenticated || !user || !userId) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-
       <main className="flex-grow container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <ProfileSection>
             <ProfileHeader
-              username={userData.username}
-              email={userData.email}
-              isEmailConfirmed={userData.emailConfirmed}
-              isAdmin={userData.admin}
-              isBanned={userData.banned}
+              username={user.username}
+              email={user.email}
+              isEmailConfirmed={isEmailConfirmed}
+              isAdmin={isAdmin}
+              isBanned={isBanned}
             />
-            <ProfileStats userId={userData.id} />
+            <ProfileStats userId={userId} />
             <ProfileActions
-              viewTopicsDisabled={false}
-              viewTakenDisabled={false}
+              userId={userId}
+              limits={limits}
+              isEmailConfirmed={isEmailConfirmed}
+              isBanned={isBanned}
+              onLogout={() => router.push('/')}
+              onRefresh={refresh}
             />
           </ProfileSection>
 
           <ProfileSection>
             <ProfileInfo
               label="Bio"
-              value={userData.bio || ''}
-              isEditable={true}
-              onDelete={() => handleBioEdit(undefined)}
+              value={user.bio || ''}
+              isEditable
+              onDelete={handleBioDelete}
               onEdit={handleBioEdit}
             />
             <ProfileInfo
               label="Location"
-              value={userData.location || ''}
-              isEditable={true}
-              onDelete={() => handleLocationEdit(undefined)}
+              value={(user as any).location || ''}
+              isEditable
+              onDelete={handleLocationDelete}
               onEdit={handleLocationEdit}
             />
             <ProfileInfo
               label="Industry"
-              value={userData.industry || ''}
-              isEditable={true}
-              onDelete={() => handleIndustryEdit(undefined)}
+              value={(user as any).industry || ''}
+              isEditable
+              onDelete={handleIndustryDelete}
               onEdit={handleIndustryEdit}
             />
           </ProfileSection>
 
-          {!userData.banned && <ChatHistory userId={userData.id} />}
+          {!isBanned && <ChatHistory userId={userId} />}
 
           <ProfileSection>
             <WalletSection />
           </ProfileSection>
 
-          {userData?.admin && (
+          {isAdmin && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
               <div className="flex items-center gap-2 mb-6">
                 <Shield className="w-5 h-5 text-purple-600" />
@@ -157,7 +165,6 @@ export default function Profile() {
           )}
         </div>
       </main>
-
       <ChatModal />
       <Footer />
     </div>

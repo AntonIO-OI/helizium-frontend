@@ -3,31 +3,18 @@
 import type { ReactNode } from 'react';
 import {
   AssistantRuntimeProvider,
-  ThreadMessage,
   useLocalRuntime,
   type ChatModelAdapter,
 } from '@assistant-ui/react';
 
-interface MessageContent {
-  text: string;
-}
-
-const MyModelAdapter: ChatModelAdapter = {
+const HeliziumModelAdapter: ChatModelAdapter = {
   async run({ messages, abortSignal }) {
-    const webPageContent = getDynamicWebPageContent();
+    const bodyText =
+      typeof document !== 'undefined'
+        ? document.body.innerText.slice(0, 3000)
+        : '';
 
-    const formattedMessages = [
-      { role: 'user', content: [{ type: 'text', text: webPageContent }] },
-      ...messages.map((message: ThreadMessage) => ({
-        role: message.role || 'user',
-        content:
-          message.role === 'user'
-            ? message.content
-            : (message.content[0] as MessageContent).text,
-      })),
-    ];
-
-    const result = await fetch(
+    const response = await fetch(
       'https://api.groq.com/openai/v1/chat/completions',
       {
         method: 'POST',
@@ -37,44 +24,48 @@ const MyModelAdapter: ChatModelAdapter = {
         },
         body: JSON.stringify({
           model: 'llama3-8b-8192',
-          messages: formattedMessages,
+          system: `You are the Helizium platform assistant. Help users with tasks, categories, freelancing, and Ethereum payments. Current page context: ${bodyText}`,
+          messages: messages
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .map((m) => ({
+              role: m.role,
+              content:
+                m.role === 'user'
+                  ? typeof m.content === 'string'
+                    ? m.content
+                    : (m.content as any[])
+                        .map((c: any) => c.text || '')
+                        .join('')
+                  : typeof m.content === 'string'
+                    ? m.content
+                    : (m.content as any[])[0]?.text || '',
+            })),
         }),
         signal: abortSignal,
       },
     );
 
-    const data = await result.json();
-    return {
-      content: [
-        {
-          type: 'text',
-          text: data['choices'][data['choices'].length - 1]['message'][
-            'content'
-          ],
-        },
-      ],
-    };
+    const data = await response.json();
+    const text =
+      data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+
+    return { content: [{ type: 'text', text }] };
   },
 };
 
-function getDynamicWebPageContent() {
-  const bodyText = document.body.innerText;
-
-  return `
-    Webpage visible text: ${bodyText.slice(0, 5000)}...
-  `;
-}
-
-export default function LLMRuntimeProvider({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
-  const runtime = useLocalRuntime(MyModelAdapter);
-
+function LLMProviderInner({ children }: { children: ReactNode }) {
+  const runtime = useLocalRuntime(HeliziumModelAdapter);
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       {children}
     </AssistantRuntimeProvider>
   );
+}
+
+export default function LLMRuntimeProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return <LLMProviderInner>{children}</LLMProviderInner>;
 }

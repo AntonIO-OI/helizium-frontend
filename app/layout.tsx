@@ -18,14 +18,14 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: 'Helizium',
-  description: 'Helizium freelance app',
+  description: 'Helizium — Ethereum-powered freelance platform',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <ErrorBoundary>
       <LLMRuntimeProvider>
@@ -34,7 +34,6 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >
             {children}
-            <style>{`nextjs-portal { display: none; }`}</style>
           </body>
         </html>
       </LLMRuntimeProvider>

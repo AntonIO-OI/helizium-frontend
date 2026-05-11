@@ -4,176 +4,75 @@ import Link from 'next/link';
 import InputField from '../components/InputField';
 import Captcha, { CaptchaRef } from '../components/Captcha';
 import AuthLayout from '../components/AuthLayout';
-import { useEffect, useRef, useState } from 'react';
-import { User } from '../types/search';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Toast from '../components/Toast';
-
-const USERNAME_VALIDATOR_MESSAGE =
-  'Username should be 4-30 characters long and contain only English letters, digits and underscores.';
-const PASSWORD_VALIDATOR_MESSAGE =
-  'Password must be 8-32 characters long. At least lowercase letter, uppercase letter and digit required';
+import { authApi } from '../lib/api/auth';
 
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])[a-zA-Z0-9_]{4,30}$/;
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
-
-function getRndInteger(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-const formatJoinedDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+const EMAIL_REGEX = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
 
 export default function SignUp() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-
-  const [userExistsError, setUserExistsError] = useState<string | null>(null);
-
-  const captchaRef = useRef<CaptchaRef>(null);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: 'error' | 'success' | '';
-  }>({ message: '', type: '' });
-
+  }>({
+    message: '',
+    type: '',
+  });
+  const captchaRef = useRef<CaptchaRef>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((user: { id: number }) => user.id === +userId);
-
-    if (user) {
-      router.push('/profile');
-    }
-  }, [router]);
-
-  const validateEmail = (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
-      return 'Please enter a valid email address';
-    }
-    return null;
-  };
-
-  const validateUsername = (value: string) => {
-    if (!USERNAME_REGEX.test(value)) {
-      return USERNAME_VALIDATOR_MESSAGE;
-    }
-    return null;
-  };
-
-  const validatePassword = (value: string) => {
-    if (!PASSWORD_REGEX.test(value)) {
-      return PASSWORD_VALIDATOR_MESSAGE;
-    }
-    return null;
-  };
-
-  const generateRandomCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
+  const validateUsername = (v: string) =>
+    USERNAME_REGEX.test(v)
+      ? null
+      : 'Username must be 4-30 characters, letters, digits, underscores';
+  const validateEmail = (v: string) =>
+    EMAIL_REGEX.test(v) ? null : 'Please enter a valid email address';
+  const validatePassword = (v: string) =>
+    PASSWORD_REGEX.test(v)
+      ? null
+      : 'Password must be 8-32 chars, include uppercase, lowercase, digit';
 
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
+
+    if (
+      validateUsername(username) ||
+      validateEmail(email) ||
+      validatePassword(password)
+    ) {
+      setToast({ message: 'Please fix validation errors', type: 'error' });
+      return;
+    }
 
     const captchaId = captchaRef.current?.getCaptchaId();
-    const captchaAnswer = captchaRef.current?.getCaptchaValue();
+    const captchaValue = captchaRef.current?.getCaptchaValue();
 
-    if (!captchaId || !captchaAnswer) {
-      setToast({ message: 'Please solve capthca', type: 'error' });
+    if (!captchaId || !captchaValue) {
+      setToast({ message: 'Please complete the captcha', type: 'error' });
       return;
     }
 
-    if (captchaAnswer.endsWith(' ')) {
-      setToast({ message: 'Invalid captcha', type: 'error' });
+    setIsLoading(true);
+    const res = await authApi.signUp(
+      { username, email: email.toLowerCase(), password },
+      { id: captchaId, value: captchaValue },
+    );
+    setIsLoading(false);
+
+    if (res.error) {
+      setServerError(res.error);
       captchaRef.current?.refreshCaptcha();
       return;
-    }
-
-    const usernameError = validateUsername(username);
-    const emailError = validateEmail(email);
-    const passwordError = validatePassword(password);
-
-    setUsernameError(usernameError);
-    setEmailError(emailError);
-    setPasswordError(passwordError);
-
-    if (usernameError || emailError || passwordError) {
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userExists = users.some(
-      (user: User) => user.username === username || user.email === email,
-    );
-
-    if (userExists) {
-      setUserExistsError('Username or email already exists.');
-      return;
-    }
-
-    setUserExistsError(null);
-
-    const id = getRndInteger(100, 999);
-
-    const newUser: User = {
-      username,
-      email,
-      password,
-      emailConfirmed: false,
-      id,
-      rating: 0,
-      completedTasks: 0,
-      joinedDate: formatJoinedDate(new Date()),
-      admin: false,
-      mfa: false,
-      totp: false,
-      banned: false,
-      reviewsCount: 0,
-    };
-
-    users.push(newUser);
-
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('userId', String(id));
-
-    try {
-      const code = generateRandomCode();
-      const response = await fetch('/api/mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          template: 'confirm.mail',
-          context: {
-            appName: 'Helizium',
-            otp: code,
-            username: username,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email');
-      }
-    } catch (error) {
-      console.error(error);
     }
 
     router.push('/profile');
@@ -201,10 +100,9 @@ export default function SignUp() {
           value={username}
           onChange={(e) => {
             setUsername(e.target.value);
-            setUserExistsError('');
+            setServerError(null);
           }}
           validate={validateUsername}
-          error={usernameError}
         />
         <InputField
           label="Email"
@@ -215,10 +113,9 @@ export default function SignUp() {
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            setUserExistsError('');
+            setServerError(null);
           }}
           validate={validateEmail}
-          error={emailError}
         />
         <InputField
           label="Password"
@@ -229,20 +126,18 @@ export default function SignUp() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           validate={validatePassword}
-          error={passwordError}
         />
 
         <Captcha path="/auth/signup" method="POST" ref={captchaRef} />
 
-        {userExistsError && (
-          <p className="text-red-500 mb-4">{userExistsError}</p>
-        )}
+        {serverError && <p className="text-red-500 mb-4">{serverError}</p>}
 
         <button
           type="submit"
-          className="w-full py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-800 transition mb-4 disabled:bg-gray-400"
+          disabled={isLoading}
+          className="w-full py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-800 transition mb-4 disabled:opacity-50"
         >
-          Sign Up
+          {isLoading ? 'Creating account...' : 'Sign Up'}
         </button>
       </form>
 

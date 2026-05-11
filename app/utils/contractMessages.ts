@@ -1,57 +1,38 @@
 import { ContractAction, ContractMessage } from '../types/contracts';
-import { getUser } from '../data/mockUsers';
 
 export function generateContractMessage(contractData: ContractMessage): string {
   const { taskId, taskTitle, action, performerId } = contractData;
   const timestamp = new Date().toISOString();
 
   const messages: Record<ContractAction, string> = {
-    create: `Creating Task Contract\n\n` +
-           `Task #${taskId}: ${taskTitle}\n` +
-           `Action: Task Creation\n` +
-           `Timestamp: ${timestamp}\n\n` +
-           `By signing this message, you agree to create this task and be bound by the platform's terms and conditions.`,
+    create:
+      `Creating Task Contract\n\n` +
+      `Task #${taskId}: ${taskTitle}\nAction: Task Creation\nTimestamp: ${timestamp}\n\n` +
+      `By signing this message, you agree to create this task and be bound by the platform's terms and conditions.`,
 
-    delete: `Deleting Task Contract\n\n` +
-           `Task #${taskId}: ${taskTitle}\n` +
-           `Action: Task Deletion\n` +
-           `Timestamp: ${timestamp}\n\n` +
-           `By signing this message, you confirm the permanent deletion of this task.`,
+    delete:
+      `Deleting Task Contract\n\n` +
+      `Task #${taskId}: ${taskTitle}\nAction: Task Deletion\nTimestamp: ${timestamp}\n\n` +
+      `By signing this message, you confirm the permanent deletion of this task.`,
 
-    accept: (() => {
-      const performer = performerId ? getUser(performerId) : null;
-      return `Accepting Freelancer Contract\n\n` +
-             `Task #${taskId}: ${taskTitle}\n` +
-             `Action: Accept Freelancer\n` +
-             `Freelancer: ${performer?.username || 'Unknown'} (ID: ${performerId})\n` +
-             `Timestamp: ${timestamp}\n\n` +
-             `By signing this message, you agree to accept this freelancer for the task.`;
-    })(),
+    accept:
+      `Accepting Freelancer Contract\n\n` +
+      `Task #${taskId}: ${taskTitle}\nAction: Accept Freelancer\n` +
+      `Freelancer ID: ${performerId ?? 'unknown'}\nTimestamp: ${timestamp}\n\n` +
+      `By signing this message, you agree to accept this freelancer for the task.`,
 
-    complete: (() => {
-      const performer = performerId ? getUser(performerId) : null;
-      return `Task Completion Contract\n\n` +
-             `Task #${taskId}: ${taskTitle}\n` +
-             `Action: Task Completion\n` +
-             `Freelancer: ${performer?.username || 'Unknown'} (ID: ${performerId})\n` +
-             `Timestamp: ${timestamp}\n\n` +
-             `By signing this message, you confirm that the task has been completed satisfactorily and agree to release payment.`;
-    })(),
+    complete:
+      `Task Completion Contract\n\n` +
+      `Task #${taskId}: ${taskTitle}\nAction: Task Completion\n` +
+      `Freelancer ID: ${performerId ?? 'unknown'}\nTimestamp: ${timestamp}\n\n` +
+      `By signing this message, you confirm satisfactory completion and agree to release payment.`,
 
-    discard: (() => {
-      const performer = performerId ? getUser(performerId) : null;
-      return (
-        `Task Freelancer discard Contract\n\n` +
-        `Task #${taskId}: ${taskTitle}\n` +
-        `Action: Task Freelacner Discard\n` +
-        `Freelancer: ${
-          performer?.username || 'Unknown'
-        } (ID: ${performerId})\n` +
-        `Timestamp: ${timestamp}\n\n` +
-        `By signing this message, you as admin confirm that you are discarding task freelancer and this action can not be undone.`
-      );
-    })()
+    discard:
+      `Task Freelancer Discard Contract\n\n` +
+      `Task #${taskId}: ${taskTitle}\nAction: Task Freelancer Discard\n` +
+      `Freelancer ID: ${performerId ?? 'unknown'}\nTimestamp: ${timestamp}\n\n` +
+      `By signing this message as admin, you confirm discarding the task freelancer. This cannot be undone.`,
   };
 
   return messages[action];
-} 
+}

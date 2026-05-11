@@ -3,81 +3,68 @@
 import Link from 'next/link';
 import InputField from '../components/InputField';
 import AuthLayout from '../components/AuthLayout';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { delay } from '../utils/storage';
+import Toast from '../components/Toast';
+import { authApi } from '../lib/api/auth';
+import Captcha, { CaptchaRef } from '../components/Captcha';
 
 export default function Login() {
   const [loginOrEmail, setLoginOrEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'error' | 'success' | '';
+  }>({
+    message: '',
+    type: '',
+  });
+  const captchaRef = useRef<CaptchaRef>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((user: { id: number }) => user.id === +userId);
-
-    if (user) {
-      router.push('/profile');
-    }
-  }, [router]);
 
   const validatePassword = (value: string) => {
     const PASSWORD_REGEX =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
-    if (!PASSWORD_REGEX.test(value)) {
-      return 'Invalid password format';
-    }
-    return null;
+    return PASSWORD_REGEX.test(value) ? null : 'Invalid password format';
   };
 
   const validateLogin = (value: string) => {
     const LOGIN_REGEX =
       /^(?=.{4,254}$)((?=.*[a-zA-Z])[a-zA-Z0-9_]{4,30}|[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$/;
-
-    if (!LOGIN_REGEX.test(value)) {
-      return 'Login should be a valid username or email';
-    }
-
-    return null;
+    return LOGIN_REGEX.test(value)
+      ? null
+      : 'Login should be a valid username or email';
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
-    setPasswordError(null);
 
-    const passwordError = validatePassword(password);
-    setPasswordError(passwordError);
-    if (passwordError) {
+    if (validateLogin(loginOrEmail) || validatePassword(password)) {
+      setLoginError('Please fix the validation errors above');
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(
-      (user: { username: string; email: string; password: string }) =>
-        (user.username === loginOrEmail || user.email === loginOrEmail) &&
-        user.password === password,
+    const captchaId = captchaRef.current?.getCaptchaId() ?? null;
+    const captchaValue = captchaRef.current?.getCaptchaValue() ?? '';
+
+    setIsLoading(true);
+    const res = await authApi.sign(
+      { login: loginOrEmail, password },
+      captchaId ? { id: captchaId, value: captchaValue } : undefined,
     );
+    setIsLoading(false);
 
-    if (!user) {
-      setLoginError('Invalid login or password');
+    if (res.error) {
+      setLoginError(res.error);
+      captchaRef.current?.refreshCaptcha();
       return;
     }
 
-    localStorage.setItem('userId', String(user.id));
-
-    await delay(400);
-
-    if (user.mfa) {
+    const mfa = res.data;
+    if (mfa?.required) {
       router.push('/mfa');
       return;
     }
@@ -90,6 +77,13 @@ export default function Login() {
       title="Login"
       description="Log in to your Helizium account and enjoy seamless payments powered by Ethereum."
     >
+      {toast.message && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ message: '', type: '' })}
+        />
+      )}
       <form onSubmit={handleLogin}>
         <InputField
           label="Login"
@@ -116,15 +110,15 @@ export default function Login() {
             setPassword(e.target.value);
             setLoginError(null);
           }}
-          error={passwordError}
         />
-
         {loginError && <p className="text-red-500 mb-4">{loginError}</p>}
+
+        <Captcha path="/auth/sign" method="POST" ref={captchaRef} />
 
         <div className="mb-4 sm:mb-6 text-right">
           <Link
             href="/forgot-password"
-            className="text-blue-500 hover:underline text-sm sm:text-base"
+            className="text-blue-500 hover:underline text-sm"
           >
             Forgot password?
           </Link>
@@ -132,12 +126,13 @@ export default function Login() {
 
         <button
           type="submit"
-          className="w-full bg-black text-white py-2.5 sm:py-3 rounded-md hover:bg-gray-800 transition text-sm sm:text-base"
+          disabled={isLoading}
+          className="w-full bg-black text-white py-2.5 rounded-md hover:bg-gray-800 transition disabled:opacity-50"
         >
-          Sign In
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
 
-        <p className="text-center mt-4 sm:mt-6 text-sm sm:text-base">
+        <p className="text-center mt-4 text-sm">
           Don&apos;t have an account?{' '}
           <Link
             href="/signup"

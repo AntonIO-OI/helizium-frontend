@@ -1,23 +1,24 @@
+'use client';
+
 import { AssistantModal } from '@assistant-ui/react';
 import { useEffect, useState } from 'react';
+import { authApi } from '../lib/api/auth';
 
 export default function ChatModal() {
-  const [chatBotAccessAllowed, setChatBotAccess] = useState(false);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find((user: { id: number }) => user.id === +userId);
-      if (user && user.emailConfirmed && !user.banned) {
-        setChatBotAccess(true);
+    authApi.info().then((res) => {
+      if (
+        res.data &&
+        res.data.limits !== 'USER_BANNED' &&
+        res.data.limits !== 'EMAIL_NOT_CONFIRMED'
+      ) {
+        setAllowed(true);
       }
-    }
-  }, [setChatBotAccess]);
+    });
+  }, []);
 
-  if (!chatBotAccessAllowed) {
-    return null;
-  }
-
-  return <AssistantModal></AssistantModal>;
+  if (!allowed) return null;
+  return <AssistantModal />;
 }

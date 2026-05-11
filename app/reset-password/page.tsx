@@ -1,112 +1,64 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import InputField from '../components/InputField';
 import AuthLayout from '../components/AuthLayout';
 import Toast from '../components/Toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User } from '../types/search';
-import { delay } from '../utils/storage';
-
-const PASSWORD_VALIDATOR_MESSAGE =
-  'Password must be 8-32 characters long. At least lowercase letter, uppercase letter and digit required';
+import { authApi } from '../lib/api/auth';
 
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+[\]{}|;:'",.<>?\/\\-]{8,32}$/;
 
 function ResetPasswordContent() {
-  const validatePassword = (value: string) => {
-    if (!PASSWORD_REGEX.test(value)) {
-      return PASSWORD_VALIDATOR_MESSAGE;
-    }
-    return null;
-  };
+  const validatePassword = (v: string) =>
+    PASSWORD_REGEX.test(v)
+      ? null
+      : 'Password must be 8-32 chars with uppercase, lowercase and digit';
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get('email');
-
-  useEffect(() => {
-    if (!email) {
-      router.push('/forgot-password');
-    }
-  }, [email, router]);
-
-  useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((user: { id: number }) => user.id === +userId);
-
-    if (user) {
-      router.push('/profile');
-    }
-  }, [router]);
+  const userId = searchParams.get('userId') || '';
+  const token = searchParams.get('token') || '';
 
   const [toast, setToast] = useState<{
     message: string;
     type: 'error' | 'success' | '';
-  }>({ message: '', type: '' });
-
+  }>({
+    message: '',
+    type: '',
+  });
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [confirmPasswordError, setConfirmPasswordError] = useState<
-    string | null
-  >(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setPasswordError(passwordError);
+    if (validatePassword(password)) {
+      setToast({
+        message: 'Password does not meet requirements',
+        type: 'error',
+      });
       return;
     }
-
-    const passwordError2 = validatePassword(confirmPassword);
-    if (passwordError2) {
-      setConfirmPasswordError(password);
-      return;
-    }
-
     if (password !== confirmPassword) {
-      setToast({
-        message: 'Password and confirm password are the same',
-        type: 'error',
-      });
+      setToast({ message: 'Passwords do not match', type: 'error' });
       return;
     }
 
-    const users: User[] = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((user: User) => user.email === email);
+    setIsLoading(true);
+    const res = await authApi.lostPasswordChange(userId, token, password);
+    setIsLoading(false);
 
-    if (!user) {
-      setToast({
-        message: 'User not exists',
-        type: 'error',
-      });
+    if (res.error) {
+      setToast({ message: res.error, type: 'error' });
       return;
     }
 
-    if (user.password === password) {
-      setToast({
-        message: 'New password is the same as old',
-        type: 'error',
-      });
-      return;
-    }
-
-    user.password = password;
-    localStorage.setItem('users', JSON.stringify(users));
-
-    await delay(400);
-
-    router.push('/login');
+    setToast({ message: 'Password changed successfully!', type: 'success' });
+    setTimeout(() => router.push('/login'), 1500);
   };
 
   return (
@@ -130,7 +82,6 @@ function ResetPasswordContent() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           validate={validatePassword}
-          error={passwordError}
           required
         />
         <InputField
@@ -141,14 +92,14 @@ function ResetPasswordContent() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           validate={validatePassword}
-          error={confirmPasswordError}
           required
         />
         <button
           type="submit"
-          className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition"
+          disabled={isLoading}
+          className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition disabled:opacity-50"
         >
-          Set New Password
+          {isLoading ? 'Updating...' : 'Set New Password'}
         </button>
       </form>
       <p className="text-center mt-4">

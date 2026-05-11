@@ -1,21 +1,26 @@
-import { Category, User } from '@/app/types/search';
+import { Category } from '@/app/lib/api/categories';
 import { useState } from 'react';
 import CategoryManagement from './CategoryManagement';
-import CategoryEditForm from './CategoryEditForm';
 
 interface CategoryHeaderProps {
   category: Category;
-  currentUser: User | null;
+  currentUser: { id: string; isAdmin: boolean } | null;
   onCategoryDeleted: () => void;
+  onCategoryUpdated: (updated: Category) => void;
 }
 
 export default function CategoryHeader({
   category,
   currentUser,
-  onCategoryDeleted
+  onCategoryDeleted,
+  onCategoryUpdated,
 }: CategoryHeaderProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [currentCategory, setCurrentCategory] = useState(category);
+
+  const handleUpdate = (updated: Category) => {
+    setCurrentCategory(updated);
+    onCategoryUpdated(updated);
+  };
 
   return (
     <div className="space-y-6">
@@ -30,25 +35,9 @@ export default function CategoryHeader({
           category={currentCategory}
           currentUser={currentUser}
           onCategoryDeleted={onCategoryDeleted}
-          onCategoryUpdated={(updatedCategory) => {
-            setCurrentCategory(updatedCategory);
-            setIsEditing(false);
-          }}
+          onCategoryUpdated={handleUpdate}
         />
       </div>
-      
-      {isEditing && currentUser?.admin && (
-        <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-          <CategoryEditForm
-            category={currentCategory}
-            onCancel={() => setIsEditing(false)}
-            onUpdate={(updatedCategory) => {
-              setCurrentCategory(updatedCategory);
-              setIsEditing(false);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
-} 
+}

@@ -4,8 +4,10 @@ import React, { forwardRef, useImperativeHandle } from 'react';
 import Image from 'next/image';
 import { LucideRefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { CAPTHCA_API } from '../constants/api';
 import InputField from './InputField';
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 interface CaptchaProps {
   path: string;
@@ -31,119 +33,121 @@ export default React.memo(
   ) {
     const [captchaId, setCaptchaId] = useState<string | null>(null);
     const [captchaData, setCaptchaData] = useState<string | null>(null);
-    const [captchaValue, setCaptchaValue] = useState<string>('');
-    const [captchaType, setCaptchaType] = useState<string>('string');
+    const [captchaValue, setCaptchaValue] = useState('');
+    const [captchaType, setCaptchaType] = useState('string');
+    const [notRequired, setNotRequired] = useState(false);
 
     const fetchCaptcha = useCallback(async () => {
-      const response = await fetch(
-        `${CAPTHCA_API}?type=${captchaType}&path=${path}&method=${method}`,
-      );
+      try {
+        const response = await fetch(
+          `${API_BASE}/captcha?type=${captchaType}&path=${encodeURIComponent(path)}&method=${method}`,
+        );
 
-      if (response.status === 204) {
-        setCaptchaId(null);
-        if (onCaptchaLoaded) {
-          onCaptchaLoaded(null);
+        if (response.status === 204) {
+          // Captcha not required for this endpoint
+          setNotRequired(true);
+          setCaptchaId(null);
+          setCaptchaData(null);
+          if (onCaptchaLoaded) onCaptchaLoaded(null);
+          return;
         }
 
-        return;
-      }
-
-      if (response.status === 200) {
-        const data: CaptchaResponse = await response.json();
-        setCaptchaId(data.id);
-        setCaptchaData(data.data);
-        if (onCaptchaLoaded) {
-          onCaptchaLoaded(null);
+        if (response.status === 200) {
+          const data: CaptchaResponse = await response.json();
+          setNotRequired(false);
+          setCaptchaId(data.id);
+          setCaptchaData(data.data);
+          if (onCaptchaLoaded) onCaptchaLoaded(data.id);
         }
+      } catch {
+        // If captcha server is unavailable, bypass silently
+        setNotRequired(true);
       }
-    }, [captchaType, path, method, setCaptchaId, onCaptchaLoaded]);
+    }, [captchaType, path, method, onCaptchaLoaded]);
 
     useEffect(() => {
       fetchCaptcha();
-    }, [captchaType, fetchCaptcha]);
+    }, [fetchCaptcha]);
 
     const handleRefresh = () => {
       fetchCaptcha();
       setCaptchaValue('');
     };
 
-    const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setCaptchaType(e.target.value);
-      setCaptchaValue('');
-    }
-
     useImperativeHandle(ref, () => ({
       getCaptchaId: () => captchaId,
       getCaptchaValue: () => captchaValue,
-      refreshCaptcha: () => handleRefresh(),
+      refreshCaptcha: handleRefresh,
     }));
 
+    if (notRequired) {
+      return (
+        <div className="mb-4">
+          <p className="text-sm text-gray-400 italic">Captcha not required</p>
+        </div>
+      );
+    }
+
+    if (!captchaId || !captchaData) {
+      return (
+        <div className="mb-4">
+          <div className="h-16 bg-gray-100 animate-pulse rounded-md" />
+        </div>
+      );
+    }
+
     return (
-      <div>
-        <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
+      <div className="mb-4">
+        <label className="block text-gray-700 font-semibold mb-2 text-sm">
           Captcha
         </label>
-        <div className="flex flex-col sm:flex-row items-stretch items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-          <div className="relative w-full sm:w-[265px]">
-            {captchaId && captchaData ? (
-              captchaType === 'audio' ? (
-                <audio
-                  controls
-                  src={`${captchaData}`}
-                  className="w-full"
-                ></audio>
-              ) : (
-                <Image
-                  src={`${captchaData}`}
-                  alt="captcha"
-                  layout="responsive"
-                  width={1}
-                  height={1}
-                  className="object-cover rounded-md w-full h-auto object-contain rounded-md"
-                />
-              )
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-3">
+          <div className="relative w-full sm:w-64">
+            {captchaType === 'audio' ? (
+              <audio controls src={captchaData} className="w-full" />
             ) : (
-              <p>Captcha not required</p>
+              <Image
+                src={captchaData}
+                alt="captcha"
+                width={265}
+                height={80}
+                className="rounded-md border border-gray-200"
+              />
             )}
           </div>
-
-          {captchaId && captchaData ? (
-            <div className="flex gap-3 sm:gap-4 items-center">
-              <button
-                type="button"
-                className="h-10 sm:h-12 px-3 sm:px-4 bg-gray-200 rounded-md hover:bg-gray-300 transition flex items-center justify-center flex-shrink-0"
-                title="Refresh Captcha"
-                onClick={handleRefresh}
-              >
-                <LucideRefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-
-              <select
-                className="h-10 sm:h-12 px-2 sm:px-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-black text-sm sm:text-base flex-1 sm:flex-initial"
-                required
-                title="Select Captcha Type"
-                value={captchaType}
-                onChange={handleTypeChange}
-              >
-                <option value="string">Text</option>
-                <option value="math">Math</option>
-                <option value="digit">Digits</option>
-                <option value="audio">Audio</option>
-              </select>
-            </div>
-          ) : null}
+          <div className="flex gap-2 items-center">
+            <button
+              type="button"
+              className="h-10 px-3 bg-gray-200 rounded-md hover:bg-gray-300 transition flex items-center"
+              onClick={handleRefresh}
+              title="Refresh Captcha"
+            >
+              <LucideRefreshCcw className="w-4 h-4" />
+            </button>
+            <select
+              className="h-10 px-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black text-sm"
+              value={captchaType}
+              onChange={(e) => {
+                setCaptchaType(e.target.value);
+                setCaptchaValue('');
+              }}
+              title="Captcha type"
+            >
+              <option value="string">Text</option>
+              <option value="math">Math</option>
+              <option value="digit">Digits</option>
+              <option value="audio">Audio</option>
+            </select>
+          </div>
         </div>
-
-        {captchaId && captchaData ? (
-          <InputField
-            type="text"
-            id="captcha"
-            placeholder="Enter captcha value"
-            value={captchaValue}
-            onChange={(e) => setCaptchaValue(e.target.value)}
-            required
-          />
-        ) : null}
+        <InputField
+          type="text"
+          id="captcha"
+          placeholder="Enter captcha answer"
+          value={captchaValue}
+          onChange={(e) => setCaptchaValue(e.target.value)}
+          required
+        />
       </div>
     );
   }),

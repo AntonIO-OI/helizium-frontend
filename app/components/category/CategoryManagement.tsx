@@ -1,4 +1,4 @@
-import { Category, User } from '@/app/types/search';
+import { Category } from '@/app/lib/api/categories';
 import { useState } from 'react';
 import DeleteCategoryButton from './DeleteCategoryButton';
 import CategoryEditForm from './CategoryEditForm';
@@ -6,7 +6,7 @@ import { Pencil } from 'lucide-react';
 
 interface CategoryManagementProps {
   category: Category;
-  currentUser: User | null;
+  currentUser: { id: string; isAdmin: boolean } | null;
   onCategoryDeleted: () => void;
   onCategoryUpdated: (category: Category) => void;
 }
@@ -15,21 +15,21 @@ export default function CategoryManagement({
   category,
   currentUser,
   onCategoryDeleted,
-  onCategoryUpdated
+  onCategoryUpdated,
 }: CategoryManagementProps) {
   const [isEditing, setIsEditing] = useState(false);
 
-  if (!currentUser?.admin) return null;
+  if (!currentUser?.isAdmin) return null;
 
   if (isEditing) {
     return (
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-3xl">
           <CategoryEditForm
             category={category}
             onCancel={() => setIsEditing(false)}
-            onUpdate={(updatedCategory) => {
-              onCategoryUpdated(updatedCategory);
+            onUpdate={(updated) => {
+              onCategoryUpdated(updated);
               setIsEditing(false);
             }}
           />
@@ -48,7 +48,7 @@ export default function CategoryManagement({
       </button>
       <DeleteCategoryButton
         categoryId={category.id}
-        isRootCategory={category.parentCategory === null}
+        isRootCategory={category.parent === null}
         onDelete={onCategoryDeleted}
       />
     </div>
