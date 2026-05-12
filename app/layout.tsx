@@ -4,6 +4,7 @@ import './globals.css';
 import LLMRuntimeProvider from './LLMRuntimeProvider';
 import React from 'react';
 import ErrorBoundary from './ErrorBoundary';
+import { ChatSSEProvider } from './hooks/useChatSSE';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -29,13 +30,15 @@ export default function RootLayout({
   return (
     <ErrorBoundary>
       <LLMRuntimeProvider>
-        <html lang="en">
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          >
-            {children}
-          </body>
-        </html>
+        <ChatSSEProvider>
+          <html lang="en">
+            <body
+              className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+            >
+              {children}
+            </body>
+          </html>
+        </ChatSSEProvider>
       </LLMRuntimeProvider>
     </ErrorBoundary>
   );

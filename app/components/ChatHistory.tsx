@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import PersonalChat from './PersonalChat';
 import { chatApi, ChatPreview } from '../lib/api/chat';
+import { useChatSSE } from '../hooks/useChatSSE';
 
 interface ChatHistoryProps {
   userId: string;
@@ -19,10 +20,16 @@ const ChatHistory: React.FC<ChatHistoryProps> = () => {
     if (res.data) setChats(res.data);
   }, []);
 
+  // SSE: refresh chat list when a new message arrives in any conversation
+  useChatSSE({
+    onChatUpdated: useCallback(() => {
+      refreshChats();
+    }, [refreshChats]),
+  });
+
   useEffect(() => {
+    // Initial load via REST
     refreshChats();
-    const interval = setInterval(refreshChats, 10000);
-    return () => clearInterval(interval);
   }, [refreshChats]);
 
   if (chats.length === 0) return null;
