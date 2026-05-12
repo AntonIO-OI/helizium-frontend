@@ -12,7 +12,7 @@ async function request<T>(
   captcha?: { id: string; value: string },
 ): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers as Record<string, string>),
   };
 

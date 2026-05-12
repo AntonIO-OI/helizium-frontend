@@ -136,6 +136,6 @@ export const tasksApi = {
   },
 
   async getPublicUser(userId: string) {
-    return apiClient.get<PublicUser>(`/v1/users/${userId}/public`);
+    return apiClient.get<PublicUser>(`/v1/u/${userId}/public`);
   },
 };

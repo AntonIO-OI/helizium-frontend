@@ -30,42 +30,42 @@ export interface UserInfoResponse {
 
 export const usersApi = {
   async getMe() {
-    return apiClient.get<UserInfoResponse>('/v1/users/me');
+    return apiClient.get<UserInfoResponse>('/v1/u/me');
   },
 
   async getGlobalPermissions(userId: string) {
-    return apiClient.get<{ permissions: string[] }>(`/v1/users/${userId}/permissions/global`);
+    return apiClient.get<{ permissions: string[] }>(`/v1/u/${userId}/permissions/global`);
   },
 
   async setGlobalPermissions(userId: string, permissions: string[]) {
-    return apiClient.post<void>(`/v1/users/${userId}/permissions/global`, { permissions });
+    return apiClient.post<void>(`/v1/u/${userId}/permissions/global`, { permissions });
   },
 
   async revokeAllGlobalPermissions(userId: string) {
-    return apiClient.delete<void>(`/v1/users/${userId}/permissions/global`);
+    return apiClient.delete<void>(`/v1/u/${userId}/permissions/global`);
   },
 
   async banUser(userId: string) {
-    return apiClient.post<void>(`/v1/users/${userId}/ban`);
+    return apiClient.post<void>(`/v1/u/${userId}/ban`);
   },
 
   async unbanUser(userId: string) {
-    return apiClient.post<void>(`/v1/users/${userId}/unban`);
+    return apiClient.post<void>(`/v1/u/${userId}/unban`);
   },
 
   async deleteUser(userId: string) {
-    return apiClient.post<void>(`/v1/users/${userId}/delete`);
+    return apiClient.post<void>(`/v1/u/${userId}/delete`);
   },
 
   async updateBio(bio: string) {
-    return apiClient.put<void>('/v1/users/me/bio', { bio });
+    return apiClient.put<void>('/v1/u/me/bio', { bio });
   },
 
   async updateLocation(location: string) {
-    return apiClient.put<void>('/v1/users/me/location', { location });
+    return apiClient.put<void>('/v1/u/me/location', { location });
   },
 
   async updateIndustry(industry: string) {
-    return apiClient.put<void>('/v1/users/me/industry', { industry });
+    return apiClient.put<void>('/v1/u/me/industry', { industry });
   },
 };

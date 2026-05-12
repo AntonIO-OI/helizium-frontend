@@ -12,7 +12,7 @@ export default function CategoriesList({
   categories,
   onCategoryDeleted,
 }: CategoriesListProps) {
-  const rootCategories = categories.filter((c) => c.parent === null);
+  const rootCategories = categories.filter((c) => c.parent === undefined);
 
   const renderCategory = (category: Category, level: number = 0) => {
     const children = categories.filter((c) => c.parent === category.id);
