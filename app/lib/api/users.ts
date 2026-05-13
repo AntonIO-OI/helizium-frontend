@@ -47,11 +47,11 @@ export const usersApi = {
   },
 
   async banUser(userId: string) {
-    return apiClient.post<void>(`/v1/u/${userId}/ban`);
+    return apiClient.post<void>(`/v1/users/${userId}/ban`);
   },
 
   async unbanUser(userId: string) {
-    return apiClient.post<void>(`/v1/u/${userId}/unban`);
+    return apiClient.post<void>(`/v1/users/${userId}/unban`);
   },
 
   async deleteUser(userId: string) {
