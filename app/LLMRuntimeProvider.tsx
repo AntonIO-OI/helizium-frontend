@@ -17,7 +17,7 @@ const HeliziumModelAdapter: ChatModelAdapter = {
     const formattedMessages = [
       {
         role: 'system',
-        content: `You are the Helizium platform assistant. Help users with tasks, categories, freelancing, and Ethereum payments. Current page context: ${bodyText}`,
+        content: `You are the Helizium platform assistant. Help users with tasks, categories, freelancing, and Ethereum payments. Do not use any html or markdown text formatting. ONLY PLAIN TEXT. Current page context: ${bodyText}`,
       },
       ...messages
         .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -52,7 +52,7 @@ const HeliziumModelAdapter: ChatModelAdapter = {
 
     const data = await response.json();
     const text =
-      data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+      data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
 
     return { content: [{ type: 'text', text }] };
   },
