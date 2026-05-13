@@ -92,6 +92,13 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
     !task.performerId &&
     task.status === 'searching';
 
+  const waitingForApprove =
+    currentUser &&
+    !isAuthor &&
+    task.applicants.includes(currentUser.id) &&
+    !task.rejectedApplicants.includes(currentUser.id) &&
+    task.status === 'searching';
+
   const canRaiseDispute =
     currentUser &&
     (isAuthor || isPerformer || isAdmin) &&
@@ -355,7 +362,9 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
         <div className="flex flex-wrap gap-4 items-center mb-6">
           <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
             <DollarSign className="w-5 h-5 text-green-600" />
-            <span className="font-semibold text-lg">{task.price} {task.currency}</span>
+            <span className="font-semibold text-lg">
+              {task.price} {task.currency}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <Calendar className="w-5 h-5" />
@@ -379,14 +388,21 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
 
       {/* ── Author ── */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-        <Link href={`/client/${author.id}`} className="flex items-center gap-4 group">
+        <Link
+          href={`/client/${author.id}`}
+          className="flex items-center gap-4 group"
+        >
           <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 transition">
             {author.username[0]}
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold group-hover:text-gray-600">{author.username}</h3>
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">Client</span>
+              <h3 className="font-semibold group-hover:text-gray-600">
+                {author.username}
+              </h3>
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                Client
+              </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <div className="flex items-center gap-1">
@@ -400,7 +416,8 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
             </div>
             {author.ethAddress && (
               <p className="text-xs text-gray-400 font-mono mt-1">
-                ETH: {author.ethAddress.slice(0, 6)}…{author.ethAddress.slice(-4)}
+                ETH: {author.ethAddress.slice(0, 6)}…
+                {author.ethAddress.slice(-4)}
               </p>
             )}
           </div>
@@ -410,14 +427,19 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
       {/* ── Performer ── */}
       {approvedPerformer && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <Link href={`/client/${approvedPerformer.id}`} className="flex items-center gap-4 group">
+          <Link
+            href={`/client/${approvedPerformer.id}`}
+            className="flex items-center gap-4 group"
+          >
             <div className="w-12 h-12 bg-gray-800 text-white rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-gray-700 transition">
               {approvedPerformer.username[0]}
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold">{approvedPerformer.username}</h3>
-                <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">Freelancer</span>
+                <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
+                  Freelancer
+                </span>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <Star className="w-4 h-4 text-yellow-400" />
@@ -425,7 +447,8 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
               </div>
               {approvedPerformer.ethAddress ? (
                 <p className="text-xs text-gray-400 font-mono mt-1">
-                  ETH: {approvedPerformer.ethAddress.slice(0, 6)}…{approvedPerformer.ethAddress.slice(-4)}
+                  ETH: {approvedPerformer.ethAddress.slice(0, 6)}…
+                  {approvedPerformer.ethAddress.slice(-4)}
                 </p>
               ) : (
                 <p className="text-xs text-amber-600 mt-1">
@@ -438,26 +461,33 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
       )}
 
       {/* ── Admin: discard freelancer ── */}
-      {isAdmin && !isAuthor && task.performerId && task.status !== 'completed' && task.status !== 'cancelled' && (
-        <button
-          onClick={handleDiscardFreelancer}
-          disabled={isLoading}
-          className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-        >
-          Discard Freelancer (Admin)
-        </button>
-      )}
+      {isAdmin &&
+        !isAuthor &&
+        task.performerId &&
+        task.status !== 'completed' &&
+        task.status !== 'cancelled' && (
+          <button
+            onClick={handleDiscardFreelancer}
+            disabled={isLoading}
+            className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            Discard Freelancer (Admin)
+          </button>
+        )}
 
       {/* ── Disputed banner ── */}
       {task.status === 'disputed' && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-3">
             <ShieldAlert className="w-6 h-6 text-red-600 flex-shrink-0" />
-            <h2 className="text-lg font-bold text-red-700">Task is in Dispute</h2>
+            <h2 className="text-lg font-bold text-red-700">
+              Task is in Dispute
+            </h2>
           </div>
           <p className="text-red-600 text-sm mb-4">
-            The escrow funds for this task are frozen. A platform administrator will review
-            the situation and release funds to the appropriate party.
+            The escrow funds for this task are frozen. A platform administrator
+            will review the situation and release funds to the appropriate
+            party.
           </p>
 
           {/* Admin resolution UI */}
@@ -468,9 +498,10 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
                 Admin Dispute Resolution
               </h3>
               <p className="text-sm text-gray-500">
-                Your MetaMask wallet must be the <strong>contract owner</strong> to release
-                on-chain funds. After calling <code>resolveDispute</code> on-chain, the backend
-                status will be updated automatically.
+                Your MetaMask wallet must be the <strong>contract owner</strong>{' '}
+                to release on-chain funds. After calling{' '}
+                <code>resolveDispute</code> on-chain, the backend status will be
+                updated automatically.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -567,8 +598,12 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
             </div>
           ) : isAuthor ? (
             <p className="text-gray-500">No applications yet.</p>
+          ) : waitingForApprove ? (
+            <p className="text-gray-500">Waiting for your approval...</p>
           ) : task.status === 'searching' && currentUser && !canApply ? (
-            <p className="text-gray-500 text-sm">You cannot apply for this task.</p>
+            <p className="text-gray-500 text-sm">
+              You cannot apply for this task.
+            </p>
           ) : null}
         </div>
       )}
@@ -599,7 +634,9 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
 
             {task.rejectionMessage && (
               <div className="mb-6">
-                <h3 className="font-medium mb-2 text-red-600">Changes Requested:</h3>
+                <h3 className="font-medium mb-2 text-red-600">
+                  Changes Requested:
+                </h3>
                 <textarea
                   value={task.rejectionMessage}
                   readOnly
@@ -608,8 +645,9 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
               </div>
             )}
 
-            {isAuthor && task.status === 'waiting_approval' && (
-              showRejectionForm ? (
+            {isAuthor &&
+              task.status === 'waiting_approval' &&
+              (showRejectionForm ? (
                 <div className="space-y-4">
                   <textarea
                     value={rejectionReason}
@@ -649,8 +687,7 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
                     Request Changes
                   </button>
                 </div>
-              )
-            )}
+              ))}
           </div>
         )}
 
@@ -701,12 +738,13 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
             <h2 className="text-lg font-semibold text-amber-700">Dispute</h2>
           </div>
           <p className="text-sm text-amber-700 mb-4">
-            If you believe there is an issue with this task, you can raise a dispute.
-            An administrator will review and determine how the escrowed funds should be released.
+            If you believe there is an issue with this task, you can raise a
+            dispute. An administrator will review and determine how the escrowed
+            funds should be released.
             {isPerformer && !isAuthor && (
               <span className="block mt-1">
-                As a freelancer, your dispute request will be reviewed by an admin who will
-                then freeze the on-chain escrow on your behalf.
+                As a freelancer, your dispute request will be reviewed by an
+                admin who will then freeze the on-chain escrow on your behalf.
               </span>
             )}
           </p>
@@ -728,7 +766,9 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
             <XCircle className="w-5 h-5" />
             <h2 className="text-xl font-semibold">Application Rejected</h2>
           </div>
-          <p className="text-gray-600">Your application was not accepted for this task.</p>
+          <p className="text-gray-600">
+            Your application was not accepted for this task.
+          </p>
           <Link
             href="/recent"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mt-4"
@@ -744,11 +784,13 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
-            <h2 className="text-lg font-semibold text-gray-700">Report a Problem</h2>
+            <h2 className="text-lg font-semibold text-gray-700">
+              Report a Problem
+            </h2>
           </div>
           <p className="text-sm text-gray-500 mb-4">
-            If this task contains fraudulent content or violates our terms of service,
-            please let our moderation team know.
+            If this task contains fraudulent content or violates our terms of
+            service, please let our moderation team know.
           </p>
           <ReportButton
             taskId={task.id}
@@ -800,24 +842,28 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
       )}
 
       {/* ── Rating display ── */}
-      {task.completed && task.performerRating != null && (isAuthor || isPerformer || isAdmin) && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center gap-3">
-          <span className="text-sm text-gray-600">Task rating:</span>
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`w-4 h-4 ${
-                  star <= task.performerRating!
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
+      {task.completed &&
+        task.performerRating != null &&
+        (isAuthor || isPerformer || isAdmin) && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+            <span className="text-sm text-gray-600">Task rating:</span>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-4 h-4 ${
+                    star <= task.performerRating!
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm font-semibold">
+              {task.performerRating}/5
+            </span>
           </div>
-          <span className="text-sm font-semibold">{task.performerRating}/5</span>
-        </div>
-      )}
+        )}
     </div>
   );
 }

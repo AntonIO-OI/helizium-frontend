@@ -259,6 +259,7 @@ export default function ProfileActions({
       setToast({ message: res.error, type: 'error' });
       return;
     }
+    await authApi.refresh();
     await onRefresh();
     setToast({ message: 'Email confirmed!', type: 'success' });
     setConfirmEmailModalOpen(false);
