@@ -5,7 +5,6 @@ import { generateContractMessage } from './contractMessages';
 // ──────────────── Contract ABI (matches TaskEscrow.sol) ────────────────
 
 const TASK_ESCROW_ABI = [
-  // Write functions
   'function fundTask(string calldata taskDbId) external payable',
   'function releaseToFreelancer(string calldata taskDbId, address freelancer) external',
   'function cancelTask(string calldata taskDbId) external',
@@ -17,7 +16,6 @@ const TASK_ESCROW_ABI = [
   'function setFeeBasisPoints(uint16 newBp) external',
   'function pause() external',
   'function unpause() external',
-  // Read functions
   'function getTask(string calldata taskDbId) external view returns (address client, uint256 amount, uint8 state, uint64 fundedAt, uint64 settledAt)',
   'function getTaskState(string calldata taskDbId) external view returns (uint8)',
   'function getContractBalance() external view returns (uint256)',
@@ -30,7 +28,15 @@ const TASK_ESCROW_ABI = [
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
-// ──────────────────────── provider helpers ─────────────────────────────
+// ──────────────────────────── helpers ──────────────────────────────────
+
+function isValidContractAddress(addr: string | undefined): addr is string {
+  return (
+    !!addr &&
+    addr !== '0x0000000000000000000000000000000000000000' &&
+    /^0x[0-9a-fA-F]{40}$/.test(addr)
+  );
+}
 
 async function getProvider(): Promise<ethers.BrowserProvider | null> {
   if (typeof window === 'undefined' || !window.ethereum) return null;
@@ -48,14 +54,32 @@ async function getSigner(): Promise<ethers.JsonRpcSigner | null> {
   }
 }
 
-function getContract(signerOrProvider: ethers.ContractRunner): ethers.Contract | null {
-  if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+async function isContractDeployed(
+  provider: ethers.BrowserProvider | ethers.JsonRpcSigner,
+  address: string,
+): Promise<boolean> {
+  try {
+    const p =
+      provider instanceof ethers.BrowserProvider
+        ? provider
+        : provider.provider as ethers.BrowserProvider;
+    const code = await p.getCode(address);
+    return code !== '0x' && code !== '0x0';
+  } catch {
+    return false;
+  }
+}
+
+function getContract(
+  signerOrProvider: ethers.ContractRunner,
+): ethers.Contract | null {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
     return null;
   }
   return new ethers.Contract(CONTRACT_ADDRESS, TASK_ESCROW_ABI, signerOrProvider);
 }
 
-// ─────────────────── message-signing (no on-chain state) ──────────────
+// ─────────────── message-signing (no on-chain state) ──────────────────
 
 export async function signTaskContract(
   action: ContractAction,
@@ -102,24 +126,26 @@ export async function signTaskContract(
   }
 }
 
-// ─────────────────── on-chain write operations ─────────────────────────
+// ─────────────── on-chain write operations ─────────────────────────────
 
-/**
- * Fund a task — client locks ETH in escrow.
- * @param taskDbId  MongoDB ObjectId string
- * @param priceInEth  Amount to lock (as ETH string, e.g. "0.05")
- */
 export async function fundTaskOnChain(
   taskDbId: string,
   priceInEth: string,
 ): Promise<{ txHash: string } | { error: string }> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+    return { error: 'Contract address not configured. Set NEXT_PUBLIC_CONTRACT_ADDRESS.' };
+  }
   try {
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
-    const contract = getContract(signer);
-    if (!contract) return { error: 'Contract address not configured (NEXT_PUBLIC_CONTRACT_ADDRESS)' };
 
-    const tx = await contract.fundTask(taskDbId, { value: ethers.parseEther(priceInEth) });
+    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+      return { error: `No contract found at ${CONTRACT_ADDRESS}. Deploy first.` };
+    }
+
+    const contract = getContract(signer)!;
+    const valueWei = ethers.parseEther(priceInEth);
+    const tx = await contract.fundTask(taskDbId, { value: valueWei });
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
   } catch (err: any) {
@@ -130,21 +156,25 @@ export async function fundTaskOnChain(
   }
 }
 
-/**
- * Release escrowed funds to the freelancer (client approves work).
- * @param taskDbId          MongoDB ObjectId string
- * @param freelancerAddress Freelancer's ETH wallet address
- */
 export async function releasePaymentOnChain(
   taskDbId: string,
   freelancerAddress: string,
 ): Promise<{ txHash: string } | { error: string }> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+    return { error: 'Contract address not configured.' };
+  }
+  if (!freelancerAddress || !/^0x[0-9a-fA-F]{40}$/.test(freelancerAddress)) {
+    return { error: 'Invalid freelancer ETH address.' };
+  }
   try {
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
-    const contract = getContract(signer);
-    if (!contract) return { error: 'Contract address not configured' };
 
+    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+      return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
+    }
+
+    const contract = getContract(signer)!;
     const tx = await contract.releaseToFreelancer(taskDbId, freelancerAddress);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
@@ -156,19 +186,21 @@ export async function releasePaymentOnChain(
   }
 }
 
-/**
- * Cancel a task and refund the client.
- * @param taskDbId  MongoDB ObjectId string
- */
 export async function cancelTaskOnChain(
   taskDbId: string,
 ): Promise<{ txHash: string } | { error: string }> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+    return { error: 'Contract address not configured.' };
+  }
   try {
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
-    const contract = getContract(signer);
-    if (!contract) return { error: 'Contract address not configured' };
 
+    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+      return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
+    }
+
+    const contract = getContract(signer)!;
     const tx = await contract.cancelTask(taskDbId);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
@@ -180,20 +212,21 @@ export async function cancelTaskOnChain(
   }
 }
 
-/**
- * Raise a dispute on a task (freezes on-chain funds).
- * Can be called by the client. Admin can also call it on behalf of the performer.
- * @param taskDbId  MongoDB ObjectId string
- */
 export async function raiseDisputeOnChain(
   taskDbId: string,
 ): Promise<{ txHash: string } | { error: string }> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+    return { error: 'Contract address not configured.' };
+  }
   try {
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
-    const contract = getContract(signer);
-    if (!contract) return { error: 'Contract address not configured' };
 
+    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+      return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
+    }
+
+    const contract = getContract(signer)!;
     const tx = await contract.raiseDispute(taskDbId);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
@@ -201,26 +234,34 @@ export async function raiseDisputeOnChain(
     if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
       return { error: 'Transaction rejected by user' };
     }
-    return { error: err?.reason || err?.message || 'Transaction failed (are you the contract owner or task client?)' };
+    return {
+      error:
+        err?.reason ||
+        err?.message ||
+        'Transaction failed (are you the contract owner or task client?)',
+    };
   }
 }
 
-/**
- * Admin resolves a dispute, releasing funds to a specific recipient.
- * Caller MUST be the contract owner (the platform deployer wallet).
- * @param taskDbId   MongoDB ObjectId string
- * @param recipient  ETH address that will receive the funds
- */
 export async function resolveDisputeOnChain(
   taskDbId: string,
   recipient: string,
 ): Promise<{ txHash: string } | { error: string }> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+    return { error: 'Contract address not configured.' };
+  }
+  if (!recipient || !/^0x[0-9a-fA-F]{40}$/.test(recipient)) {
+    return { error: 'Invalid recipient ETH address.' };
+  }
   try {
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
-    const contract = getContract(signer);
-    if (!contract) return { error: 'Contract address not configured' };
 
+    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+      return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
+    }
+
+    const contract = getContract(signer)!;
     const tx = await contract.resolveDispute(taskDbId, recipient);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
@@ -229,27 +270,33 @@ export async function resolveDisputeOnChain(
       return { error: 'Transaction rejected' };
     }
     return {
-      error: err?.reason || err?.message ||
+      error:
+        err?.reason ||
+        err?.message ||
         'Failed — ensure your MetaMask wallet is the contract owner',
     };
   }
 }
 
-/**
- * Admin emergency release (skips dispute flow, no fee).
- * @param taskDbId   MongoDB ObjectId string
- * @param recipient  ETH address that will receive the full balance
- */
 export async function adminReleaseOnChain(
   taskDbId: string,
   recipient: string,
 ): Promise<{ txHash: string } | { error: string }> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+    return { error: 'Contract address not configured.' };
+  }
+  if (!recipient || !/^0x[0-9a-fA-F]{40}$/.test(recipient)) {
+    return { error: 'Invalid recipient ETH address.' };
+  }
   try {
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
-    const contract = getContract(signer);
-    if (!contract) return { error: 'Contract address not configured' };
 
+    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+      return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
+    }
+
+    const contract = getContract(signer)!;
     const tx = await contract.adminRelease(taskDbId, recipient);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
@@ -263,12 +310,14 @@ export async function adminReleaseOnChain(
 
 // ──────────────────────────── read helpers ─────────────────────────────
 
-export async function getOnChainTaskState(
-  taskDbId: string,
-): Promise<number | null> {
+export async function getOnChainTaskState(taskDbId: string): Promise<number | null> {
+  if (!isValidContractAddress(CONTRACT_ADDRESS)) return null;
   try {
     const provider = await getProvider();
     if (!provider) return null;
+
+    if (!(await isContractDeployed(provider, CONTRACT_ADDRESS))) return null;
+
     const contract = getContract(provider);
     if (!contract) return null;
     const state = await contract.getTaskState(taskDbId);
@@ -278,7 +327,6 @@ export async function getOnChainTaskState(
   }
 }
 
-/** Returns the connected wallet's address, or null. */
 export async function getConnectedAddress(): Promise<string | null> {
   try {
     const provider = await getProvider();

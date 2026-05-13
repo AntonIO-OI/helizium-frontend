@@ -85,6 +85,13 @@ export function useAuth() {
     }
   }, []);
 
+  // Optimistic patch — updates a user field locally without a full re-fetch.
+  const patchUser = useCallback((updates: Partial<UserProfile>) => {
+    setState((s) =>
+      s.user ? { ...s, user: { ...s.user, ...updates } } : s,
+    );
+  }, []);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -94,5 +101,5 @@ export function useAuth() {
     setState({ ...initial, isLoading: false });
   }, []);
 
-  return { ...state, refresh, logout };
+  return { ...state, refresh, logout, patchUser };
 }

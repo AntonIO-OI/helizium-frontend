@@ -28,6 +28,7 @@ export default function Profile() {
     isEmailConfirmed,
     limits,
     refresh,
+    patchUser,
   } = useAuth();
 
   useEffect(() => {
@@ -39,41 +40,41 @@ export default function Profile() {
   const handleBioEdit = useCallback(
     async (newBio: string) => {
       await usersApi.updateBio(newBio);
-      await refresh();
+      patchUser({ bio: newBio });
     },
-    [refresh],
+    [patchUser],
   );
 
   const handleBioDelete = useCallback(async () => {
     await usersApi.updateBio('');
-    await refresh();
-  }, [refresh]);
+    patchUser({ bio: '' });
+  }, [patchUser]);
 
   const handleLocationEdit = useCallback(
     async (location: string) => {
       await usersApi.updateLocation(location);
-      await refresh();
+      patchUser({ location } as any);
     },
-    [refresh],
+    [patchUser],
   );
 
   const handleLocationDelete = useCallback(async () => {
     await usersApi.updateLocation('');
-    await refresh();
-  }, [refresh]);
+    patchUser({ location: '' } as any);
+  }, [patchUser]);
 
   const handleIndustryEdit = useCallback(
     async (industry: string) => {
       await usersApi.updateIndustry(industry);
-      await refresh();
+      patchUser({ industry } as any);
     },
-    [refresh],
+    [patchUser],
   );
 
   const handleIndustryDelete = useCallback(async () => {
     await usersApi.updateIndustry('');
-    await refresh();
-  }, [refresh]);
+    patchUser({ industry: '' } as any);
+  }, [patchUser]);
 
   if (isLoading) {
     return (

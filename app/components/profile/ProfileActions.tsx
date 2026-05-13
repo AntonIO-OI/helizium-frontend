@@ -9,13 +9,15 @@ import {
   LucidePlus,
   LucideTrash,
   LucideLock,
+  LucideToggleLeft,
+  LucideToggleRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProfileButton from './ProfileButton';
 import Toast from '../Toast';
 import InputField from '../InputField';
-import { authApi, ApiTokenRecord } from '../../lib/api/auth';
+import { authApi, ApiTokenRecord, MfaInfo } from '../../lib/api/auth';
 import { useQRCode } from 'next-qrcode';
 
 interface ProfileActionsProps {
@@ -49,7 +51,17 @@ export default function ProfileActions({
 
   const isMfaRoot = limits === 'ROOT' || limits === 'BANNED_ROOT';
 
-  // ── Session elevation (email OTP → ROOT token) ───────────────────────
+  // ── MFA status ───────────────────────────────────────────────────────
+  const [mfaInfo, setMfaInfo] = useState<MfaInfo | null>(null);
+  const [mfaLoading, setMfaLoading] = useState(false);
+
+  useEffect(() => {
+    authApi.getMfa().then((res) => {
+      if (res.data) setMfaInfo(res.data);
+    });
+  }, []);
+
+  // ── Session elevation ────────────────────────────────────────────────
   const [isElevationOpen, setIsElevationOpen] = useState(false);
   const [pendingElevatedAction, setPendingElevatedAction] = useState<
     (() => void) | null
@@ -58,8 +70,6 @@ export default function ProfileActions({
   const [elevationCodeSent, setElevationCodeSent] = useState(false);
   const [elevationLoading, setElevationLoading] = useState(false);
 
-  /** If the session is already elevated (ROOT) run the action immediately,
-   *  otherwise open the identity-verification modal first. */
   const withElevation = (action: () => void) => {
     if (isMfaRoot) {
       action();
@@ -80,10 +90,7 @@ export default function ProfileActions({
       return;
     }
     setElevationCodeSent(true);
-    setToast({
-      message: 'Verification code sent to your email.',
-      type: 'success',
-    });
+    setToast({ message: 'Verification code sent to your email.', type: 'success' });
   };
 
   const handleElevationConfirm = async () => {
@@ -98,18 +105,36 @@ export default function ProfileActions({
       setToast({ message: confirmRes.error, type: 'error' });
       return;
     }
-    // Elevate the session: exchange the BECAME_ROOT token for a ROOT token.
     await authApi.refresh();
     await onRefresh();
     setElevationLoading(false);
     setIsElevationOpen(false);
     if (pendingElevatedAction) {
-      // Small tick to let React propagate updated limits before calling action.
       setTimeout(() => {
         pendingElevatedAction();
         setPendingElevatedAction(null);
       }, 50);
     }
+  };
+
+  // ── MFA Required toggle ──────────────────────────────────────────────
+  const toggleMfaRequired = async () => {
+    if (!mfaInfo) return;
+    const newRequired = !mfaInfo.required;
+    setMfaLoading(true);
+    const res = await authApi.setMfaRequired(newRequired);
+    setMfaLoading(false);
+    if (res.error) {
+      setToast({ message: res.error, type: 'error' });
+      return;
+    }
+    setMfaInfo((prev) => prev ? { ...prev, required: newRequired } : prev);
+    setToast({
+      message: newRequired
+        ? 'MFA is now required on every login.'
+        : 'MFA is no longer required on login.',
+      type: 'success',
+    });
   };
 
   // ── Change password ──────────────────────────────────────────────────
@@ -118,18 +143,10 @@ export default function ProfileActions({
   const [newPassword, setNewPassword] = useState('');
 
   const changePasswordHandler = async () => {
-    if (
-      !oldPassword ||
-      !newPassword ||
-      validatePassword(oldPassword) ||
-      validatePassword(newPassword)
-    )
+    if (!oldPassword || !newPassword || validatePassword(oldPassword) || validatePassword(newPassword))
       return;
     if (oldPassword === newPassword) {
-      setToast({
-        message: 'New and old passwords cannot be the same.',
-        type: 'error',
-      });
+      setToast({ message: 'New and old passwords cannot be the same.', type: 'error' });
       return;
     }
     const res = await authApi.changePassword(oldPassword, newPassword);
@@ -137,10 +154,7 @@ export default function ProfileActions({
       setToast({ message: res.error, type: 'error' });
       return;
     }
-    setToast({
-      message: 'Password changed. Please log in again.',
-      type: 'success',
-    });
+    setToast({ message: 'Password changed. Please log in again.', type: 'success' });
     await authApi.terminate();
     setTimeout(() => router.push('/login'), 1500);
   };
@@ -158,17 +172,12 @@ export default function ProfileActions({
     setTokenModalOpen(true);
     const res = await authApi.getApiTokens();
     setTokensLoading(false);
-    if (res.data) {
-      setApiTokens(res.data.tokens || []);
-    }
+    if (res.data) setApiTokens(res.data.tokens || []);
   };
 
   const generateToken = async () => {
     if (tokenName.length < 3) {
-      setToast({
-        message: 'Token name must be at least 3 characters.',
-        type: 'error',
-      });
+      setToast({ message: 'Token name must be at least 3 characters.', type: 'error' });
       return;
     }
     const res = await authApi.createApiToken(tokenName, !isReadonly);
@@ -217,6 +226,9 @@ export default function ProfileActions({
       return;
     }
     await onRefresh();
+    setMfaInfo((prev) =>
+      prev ? { ...prev, methods: [...new Set([...prev.methods, 'TOTP'])] } : prev,
+    );
     setToast({ message: 'TOTP enabled!', type: 'success' });
     setTotpModalOpen(false);
   };
@@ -227,11 +239,13 @@ export default function ProfileActions({
       setToast({ message: res.error, type: 'error' });
       return;
     }
-    await onRefresh();
+    setMfaInfo((prev) =>
+      prev ? { ...prev, methods: prev.methods.filter((m) => m !== 'TOTP') } : prev,
+    );
     setToast({ message: 'TOTP disabled.', type: 'success' });
   };
 
-  // ── Email confirm (initial) ──────────────────────────────────────────
+  // ── Email confirm ────────────────────────────────────────────────────
   const [isConfirmEmailModalOpen, setConfirmEmailModalOpen] = useState(false);
   const [emailCode, setEmailCode] = useState('');
   const [emailCodeSending, setEmailCodeSending] = useState(false);
@@ -270,6 +284,8 @@ export default function ProfileActions({
     onLogout();
     router.push('/');
   };
+
+  const isTotpEnabled = mfaInfo?.methods.includes('TOTP') ?? false;
 
   return (
     <div>
@@ -334,11 +350,47 @@ export default function ProfileActions({
           )}
         </div>
         <p className="text-sm text-gray-500 mb-4">
-          API tokens and authenticator setup require a quick email verification
-          for your protection.
+          API tokens and authenticator setup require a quick email verification for your protection.
         </p>
+
+        {/* MFA Required toggle */}
+        {isEmailConfirmed && mfaInfo !== null && (
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-800">
+                  Login MFA Requirement
+                </p>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {mfaInfo.required
+                    ? 'MFA is currently required on every login.'
+                    : 'MFA is not required on login.'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Available methods: {mfaInfo.methods.join(', ')}
+                </p>
+              </div>
+              <button
+                onClick={() => withElevation(toggleMfaRequired)}
+                disabled={mfaLoading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all text-sm disabled:opacity-50 ${
+                  mfaInfo.required
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {mfaInfo.required ? (
+                  <LucideToggleRight className="w-5 h-5 text-green-600" />
+                ) : (
+                  <LucideToggleLeft className="w-5 h-5 text-gray-500" />
+                )}
+                {mfaInfo.required ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Change password — allowed at DEFAULT level (old password verifies identity) */}
           <ProfileButton
             label="Change Password"
             variant="secondary"
@@ -346,7 +398,6 @@ export default function ProfileActions({
             onClick={() => setChangePasswordOpen(true)}
             fullWidth
           />
-          {/* API tokens — needs ROOT, elevation modal handles it */}
           <ProfileButton
             label="API Tokens"
             variant="secondary"
@@ -355,24 +406,24 @@ export default function ProfileActions({
             fullWidth
             disabled={!isEmailConfirmed}
           />
-          {/* TOTP setup — needs ROOT */}
           <ProfileButton
-            label="Setup TOTP Authenticator"
+            label={isTotpEnabled ? 'Reconfigure TOTP' : 'Setup TOTP Authenticator'}
             variant="secondary"
             icon={LucideShield}
             onClick={() => withElevation(openTotpModal)}
             fullWidth
             disabled={!isEmailConfirmed}
           />
-          {/* TOTP disable — needs ROOT */}
-          <ProfileButton
-            label="Disable TOTP"
-            variant="secondary"
-            icon={LucideShield}
-            onClick={() => withElevation(disableTotpHandler)}
-            fullWidth
-            disabled={!isEmailConfirmed}
-          />
+          {isTotpEnabled && (
+            <ProfileButton
+              label="Disable TOTP"
+              variant="secondary"
+              icon={LucideShield}
+              onClick={() => withElevation(disableTotpHandler)}
+              fullWidth
+              disabled={!isEmailConfirmed}
+            />
+          )}
         </div>
       </div>
 
@@ -488,12 +539,16 @@ export default function ProfileActions({
               <>
                 {generatedToken ? (
                   <div>
-                    <p className="font-semibold mb-2">
-                      Your new API token (copy now!):
-                    </p>
+                    <p className="font-semibold mb-2">Your new API token (copy now!):</p>
                     <p className="bg-gray-100 p-2 rounded text-sm font-mono break-all">
                       {generatedToken}
                     </p>
+                    <button
+                      className="mt-3 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      onClick={() => setGeneratedToken(null)}
+                    >
+                      Create another
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -532,8 +587,7 @@ export default function ProfileActions({
                         className="flex justify-between items-center bg-gray-100 p-2 rounded"
                       >
                         <span className="text-sm">
-                          {token.title} (
-                          {token.writeAccess ? 'write' : 'read-only'})
+                          {token.title} ({token.writeAccess ? 'write' : 'read-only'})
                         </span>
                         <button
                           className="text-red-600 hover:text-red-800"
@@ -570,12 +624,7 @@ export default function ProfileActions({
               <div className="flex justify-center">
                 <Canvas
                   text={totpUri}
-                  options={{
-                    errorCorrectionLevel: 'L',
-                    margin: 0,
-                    scale: 5,
-                    width: 200,
-                  }}
+                  options={{ errorCorrectionLevel: 'L', margin: 0, scale: 5, width: 200 }}
                 />
               </div>
             )}
@@ -610,8 +659,7 @@ export default function ProfileActions({
           <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
             <h2 className="text-lg font-bold">Confirm Email</h2>
             <p className="text-sm text-gray-600">
-              Click &quot;Send Code&quot; to receive a confirmation code by
-              email.
+              Click &quot;Send Code&quot; to receive a confirmation code by email.
             </p>
             {!emailCodeSent ? (
               <button
