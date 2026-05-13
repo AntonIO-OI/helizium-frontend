@@ -4,18 +4,19 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import { AlertCircle, X as XIcon } from 'lucide-react';
+import { AlertCircle, X as XIcon, Loader2 } from 'lucide-react';
 import ChatModal from '@/app/components/ChatModal';
 import { useAuth } from '@/app/lib/hooks/useAuth';
 import { categoriesApi, Category } from '@/app/lib/api/categories';
 import { tasksApi } from '@/app/lib/api/tasks';
-import { signTaskContract } from '@/app/utils/contractOperations';
+import {
+  signTaskContract,
+  fundTaskOnChain,
+} from '@/app/utils/contractOperations';
 
 export default function CreateTaskPage() {
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { isLoading, isAuthenticated, isBanned, isEmailConfirmed, limits } =
-    useAuth();
+  const { isLoading, isAuthenticated, isBanned, isEmailConfirmed } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -23,6 +24,7 @@ export default function CreateTaskPage() {
   const [price, setPrice] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [error, setError] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -36,18 +38,18 @@ export default function CreateTaskPage() {
       if (isBanned) setShowBannedModal(true);
       if (!isEmailConfirmed) setShowEmailModal(true);
     }
-    categoriesApi.listAllCategories().then((cats) => setCategories(cats));
+    categoriesApi.listAllCategories().then(setCategories);
   }, [isLoading, isAuthenticated, isBanned, isEmailConfirmed, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfoMsg('');
 
     if (isBanned || !isEmailConfirmed) {
       setError('You are not allowed to create tasks at this time.');
       return;
     }
-
     if (!title || !content || !categoryId || !price || !dueDate) {
       setError('Please fill in all fields.');
       return;
@@ -55,45 +57,56 @@ export default function CreateTaskPage() {
 
     setIsSubmitting(true);
 
-    // Sign contract (MetaMask)
-    let contractTxHash: string | undefined;
-    try {
-      const contractResult = await signTaskContract('create', 0, title);
-      if (!contractResult.success) {
-        setError(
-          contractResult.error || 'Contract signing failed. Please try again.',
-        );
-        setIsSubmitting(false);
-        return;
-      }
-      contractTxHash = contractResult.signature?.signature;
-    } catch {
-      setError('MetaMask interaction failed.');
+    // 1. Sign a message as proof of intent (no gas).
+    const contractResult = await signTaskContract('create', 0, title);
+    if (!contractResult.success) {
+      setError(contractResult.error || 'MetaMask signing failed.');
       setIsSubmitting(false);
       return;
     }
 
+    // 2. Create the task in the backend → we get a task ID.
     const res = await tasksApi.createTask({
       title,
       content,
       categoryId,
       price: parseFloat(price),
       dueDate,
-      contractTxHash,
+      contractTxHash: contractResult.signature?.signature,
     });
-
-    setIsSubmitting(false);
 
     if (res.error) {
       setError(res.error);
+      setIsSubmitting(false);
       return;
     }
 
-    router.push(`/task/${res.data!.id}`);
+    const task = res.data!;
+
+    // 3. Fund the task on-chain (optional — only if price > 0).
+    if (parseFloat(price) > 0) {
+      setInfoMsg('Locking escrow funds on-chain via MetaMask…');
+      const onChain = await fundTaskOnChain(task.id, price);
+
+      if (!('error' in onChain)) {
+        // Update the task with the real tx hash.
+        await tasksApi.editTask(task.id, { contractTxHash: onChain.txHash });
+        setInfoMsg('');
+      } else {
+        setInfoMsg('');
+        // Non-fatal: task exists, but on-chain funding was skipped or rejected.
+        const msg = `Task created (ID: …${task.id.slice(-8)}), but on-chain escrow funding failed: ${onChain.error}. You can fund the escrow contract manually later.`;
+        setError(msg);
+        setTimeout(() => router.push(`/task/${task.id}`), 5000);
+        return;
+      }
+    }
+
+    setIsSubmitting(false);
+    router.push(`/task/${task.id}`);
   };
 
   if (isLoading) return null;
-
   const disabled = isBanned || !isEmailConfirmed;
 
   return (
@@ -107,11 +120,18 @@ export default function CreateTaskPage() {
             className="space-y-6 bg-white p-6 rounded-lg shadow-sm"
           >
             {error && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
-                <AlertCircle className="w-5 h-5" />
+              <div className="flex items-start gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
+            {infoMsg && (
+              <div className="flex items-center gap-2 text-blue-600 bg-blue-50 p-3 rounded-lg">
+                <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin" />
+                <span>{infoMsg}</span>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Title
@@ -124,6 +144,7 @@ export default function CreateTaskPage() {
                 placeholder="Enter task title"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
@@ -136,6 +157,7 @@ export default function CreateTaskPage() {
                 placeholder="Describe your task requirements"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category
@@ -153,6 +175,7 @@ export default function CreateTaskPage() {
                 ))}
               </select>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -170,6 +193,10 @@ export default function CreateTaskPage() {
                     step="0.001"
                   />
                 </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  Funds are locked in the smart contract escrow until task
+                  completion.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -184,6 +211,7 @@ export default function CreateTaskPage() {
                 />
               </div>
             </div>
+
             <div className="flex justify-end gap-4">
               <button
                 type="button"
@@ -195,11 +223,12 @@ export default function CreateTaskPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || disabled}
-                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isSubmitting
-                  ? 'Creating...'
-                  : 'Create Task (Sign with MetaMask)'}
+                  ? 'Creating…'
+                  : 'Create Task (Sign & Fund via MetaMask)'}
               </button>
             </div>
           </form>
@@ -242,7 +271,7 @@ export default function CreateTaskPage() {
               Please confirm your email before creating tasks.
             </p>
             <button
-              className="flex-1 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
+              className="w-full px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
               onClick={() => router.push('/profile')}
             >
               Go to Profile

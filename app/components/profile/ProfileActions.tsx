@@ -8,6 +8,7 @@ import {
   LucideLogOut,
   LucidePlus,
   LucideTrash,
+  LucideLock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -46,35 +47,75 @@ export default function ProfileActions({
     type: 'error' | 'success' | '';
   }>({ message: '', type: '' });
 
-  // Change password
+  const isMfaRoot = limits === 'ROOT' || limits === 'BANNED_ROOT';
+
+  // ── Session elevation (email OTP → ROOT token) ───────────────────────
+  const [isElevationOpen, setIsElevationOpen] = useState(false);
+  const [pendingElevatedAction, setPendingElevatedAction] = useState<
+    (() => void) | null
+  >(null);
+  const [elevationCode, setElevationCode] = useState('');
+  const [elevationCodeSent, setElevationCodeSent] = useState(false);
+  const [elevationLoading, setElevationLoading] = useState(false);
+
+  /** If the session is already elevated (ROOT) run the action immediately,
+   *  otherwise open the identity-verification modal first. */
+  const withElevation = (action: () => void) => {
+    if (isMfaRoot) {
+      action();
+    } else {
+      setPendingElevatedAction(() => action);
+      setElevationCode('');
+      setElevationCodeSent(false);
+      setIsElevationOpen(true);
+    }
+  };
+
+  const handleElevationSendCode = async () => {
+    setElevationLoading(true);
+    const res = await authApi.sendEmailMfaCode();
+    setElevationLoading(false);
+    if (res.error) {
+      setToast({ message: res.error, type: 'error' });
+      return;
+    }
+    setElevationCodeSent(true);
+    setToast({
+      message: 'Verification code sent to your email.',
+      type: 'success',
+    });
+  };
+
+  const handleElevationConfirm = async () => {
+    if (!elevationCode.trim()) {
+      setToast({ message: 'Enter the verification code.', type: 'error' });
+      return;
+    }
+    setElevationLoading(true);
+    const confirmRes = await authApi.confirmEmailMfaCode(userId, elevationCode);
+    if (confirmRes.error) {
+      setElevationLoading(false);
+      setToast({ message: confirmRes.error, type: 'error' });
+      return;
+    }
+    // Elevate the session: exchange the BECAME_ROOT token for a ROOT token.
+    await authApi.refresh();
+    await onRefresh();
+    setElevationLoading(false);
+    setIsElevationOpen(false);
+    if (pendingElevatedAction) {
+      // Small tick to let React propagate updated limits before calling action.
+      setTimeout(() => {
+        pendingElevatedAction();
+        setPendingElevatedAction(null);
+      }, 50);
+    }
+  };
+
+  // ── Change password ──────────────────────────────────────────────────
   const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-
-  // API Tokens
-  const [isTokenModalOpen, setTokenModalOpen] = useState(false);
-  const [apiTokens, setApiTokens] = useState<ApiTokenRecord[]>([]);
-  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
-  const [tokenName, setTokenName] = useState('');
-  const [isReadonly, setIsReadonly] = useState(false);
-  const [isTokensLoading, setTokensLoading] = useState(false);
-
-  // MFA / TOTP
-  const [isTotpModalOpen, setTotpModalOpen] = useState(false);
-  const [totpUri, setTotpUri] = useState('');
-  const [totpInput, setTotpInput] = useState('');
-
-  // Email confirm
-  const [isConfirmEmailModalOpen, setConfirmEmailModalOpen] = useState(false);
-  const [emailCode, setEmailCode] = useState('');
-  const [emailCodeSending, setEmailCodeSending] = useState(false);
-  const [emailCodeSent, setEmailCodeSent] = useState(false);
-
-  const logoutHandler = async () => {
-    await authApi.logout();
-    onLogout();
-    router.push('/');
-  };
 
   const changePasswordHandler = async () => {
     if (
@@ -86,7 +127,7 @@ export default function ProfileActions({
       return;
     if (oldPassword === newPassword) {
       setToast({
-        message: 'New and old passwords cannot be the same',
+        message: 'New and old passwords cannot be the same.',
         type: 'error',
       });
       return;
@@ -104,20 +145,28 @@ export default function ProfileActions({
     setTimeout(() => router.push('/login'), 1500);
   };
 
+  // ── API Tokens ───────────────────────────────────────────────────────
+  const [isTokenModalOpen, setTokenModalOpen] = useState(false);
+  const [apiTokens, setApiTokens] = useState<ApiTokenRecord[]>([]);
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [tokenName, setTokenName] = useState('');
+  const [isReadonly, setIsReadonly] = useState(false);
+  const [isTokensLoading, setTokensLoading] = useState(false);
+
   const openTokenModal = async () => {
     setTokensLoading(true);
+    setTokenModalOpen(true);
     const res = await authApi.getApiTokens();
     setTokensLoading(false);
     if (res.data) {
       setApiTokens(res.data.tokens || []);
     }
-    setTokenModalOpen(true);
   };
 
   const generateToken = async () => {
     if (tokenName.length < 3) {
       setToast({
-        message: 'Token name must be at least 3 characters',
+        message: 'Token name must be at least 3 characters.',
         type: 'error',
       });
       return;
@@ -139,8 +188,13 @@ export default function ProfileActions({
     await authApi.deleteApiToken(jti);
     const refreshRes = await authApi.getApiTokens();
     if (refreshRes.data) setApiTokens(refreshRes.data.tokens || []);
-    setToast({ message: 'Token deleted', type: 'success' });
+    setToast({ message: 'Token deleted.', type: 'success' });
   };
+
+  // ── TOTP ─────────────────────────────────────────────────────────────
+  const [isTotpModalOpen, setTotpModalOpen] = useState(false);
+  const [totpUri, setTotpUri] = useState('');
+  const [totpInput, setTotpInput] = useState('');
 
   const openTotpModal = async () => {
     const res = await authApi.initTotp();
@@ -154,7 +208,7 @@ export default function ProfileActions({
 
   const enableTotpHandler = async () => {
     if (!totpInput) {
-      setToast({ message: 'Enter TOTP code', type: 'error' });
+      setToast({ message: 'Enter TOTP code.', type: 'error' });
       return;
     }
     const res = await authApi.confirmTotp(totpInput);
@@ -174,8 +228,14 @@ export default function ProfileActions({
       return;
     }
     await onRefresh();
-    setToast({ message: 'TOTP disabled', type: 'success' });
+    setToast({ message: 'TOTP disabled.', type: 'success' });
   };
+
+  // ── Email confirm (initial) ──────────────────────────────────────────
+  const [isConfirmEmailModalOpen, setConfirmEmailModalOpen] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+  const [emailCodeSending, setEmailCodeSending] = useState(false);
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
 
   const sendEmailConfirmCode = async () => {
     setEmailCodeSending(true);
@@ -191,7 +251,7 @@ export default function ProfileActions({
 
   const confirmEmailHandler = async () => {
     if (!emailCode) {
-      setToast({ message: 'Enter the email code', type: 'error' });
+      setToast({ message: 'Enter the email code.', type: 'error' });
       return;
     }
     const res = await authApi.confirmEmailMfaCode(userId, emailCode);
@@ -204,7 +264,11 @@ export default function ProfileActions({
     setConfirmEmailModalOpen(false);
   };
 
-  const isMfaRoot = limits === 'ROOT' || limits === 'BANNED_ROOT';
+  const logoutHandler = async () => {
+    await authApi.logout();
+    onLogout();
+    router.push('/');
+  };
 
   return (
     <div>
@@ -216,6 +280,7 @@ export default function ProfileActions({
         />
       )}
 
+      {/* ── Primary actions ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ProfileButton
           label="View Topics"
@@ -257,17 +322,22 @@ export default function ProfileActions({
         />
       </div>
 
+      {/* ── Security settings ── */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Security Settings</h2>
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="text-xl font-bold">Security Settings</h2>
+          {!isMfaRoot && (
+            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              Some options require identity verification
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          API tokens and authenticator setup require a quick email verification
+          for your protection.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProfileButton
-            label="API Tokens"
-            variant="secondary"
-            icon={LucideKey}
-            onClick={openTokenModal}
-            fullWidth
-            disabled={!isEmailConfirmed}
-          />
+          {/* Change password — allowed at DEFAULT level (old password verifies identity) */}
           <ProfileButton
             label="Change Password"
             variant="secondary"
@@ -275,28 +345,93 @@ export default function ProfileActions({
             onClick={() => setChangePasswordOpen(true)}
             fullWidth
           />
-          {isMfaRoot && (
-            <>
-              <ProfileButton
-                label="Init TOTP"
-                variant="secondary"
-                icon={LucideShield}
-                onClick={openTotpModal}
-                fullWidth
-              />
-              <ProfileButton
-                label="Disable TOTP"
-                variant="secondary"
-                icon={LucideShield}
-                onClick={disableTotpHandler}
-                fullWidth
-              />
-            </>
-          )}
+          {/* API tokens — needs ROOT, elevation modal handles it */}
+          <ProfileButton
+            label="API Tokens"
+            variant="secondary"
+            icon={LucideKey}
+            onClick={() => withElevation(openTokenModal)}
+            fullWidth
+            disabled={!isEmailConfirmed}
+          />
+          {/* TOTP setup — needs ROOT */}
+          <ProfileButton
+            label="Setup TOTP Authenticator"
+            variant="secondary"
+            icon={LucideShield}
+            onClick={() => withElevation(openTotpModal)}
+            fullWidth
+            disabled={!isEmailConfirmed}
+          />
+          {/* TOTP disable — needs ROOT */}
+          <ProfileButton
+            label="Disable TOTP"
+            variant="secondary"
+            icon={LucideShield}
+            onClick={() => withElevation(disableTotpHandler)}
+            fullWidth
+            disabled={!isEmailConfirmed}
+          />
         </div>
       </div>
 
-      {/* Change Password Modal */}
+      {/* ══════════════════ ELEVATION MODAL ══════════════════ */}
+      {isElevationOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-amber-100 p-2 rounded-full">
+                <LucideLock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">Verify Your Identity</h2>
+                <p className="text-sm text-gray-500">
+                  Confirm your email to access this security feature.
+                </p>
+              </div>
+            </div>
+
+            {!elevationCodeSent ? (
+              <button
+                onClick={handleElevationSendCode}
+                disabled={elevationLoading}
+                className="w-full bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition"
+              >
+                {elevationLoading ? 'Sending…' : 'Send Verification Code'}
+              </button>
+            ) : (
+              <>
+                <InputField
+                  id="elevationCode"
+                  type="text"
+                  placeholder="Enter 6-digit code from your email"
+                  value={elevationCode}
+                  onChange={(e) => setElevationCode(e.target.value)}
+                />
+                <button
+                  onClick={handleElevationConfirm}
+                  disabled={elevationLoading || !elevationCode.trim()}
+                  className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition"
+                >
+                  {elevationLoading ? 'Verifying…' : 'Verify & Continue'}
+                </button>
+              </>
+            )}
+
+            <button
+              className="w-full py-2 border rounded-lg hover:bg-gray-50 text-sm text-gray-600 transition"
+              onClick={() => {
+                setIsElevationOpen(false);
+                setPendingElevatedAction(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════ CHANGE PASSWORD MODAL ══════════════════ */}
       {isChangePasswordOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
@@ -304,7 +439,7 @@ export default function ProfileActions({
             <InputField
               type="password"
               id="oldPassword"
-              placeholder="Old Password"
+              placeholder="Current Password"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
               validate={validatePassword}
@@ -341,13 +476,13 @@ export default function ProfileActions({
         </div>
       )}
 
-      {/* API Tokens Modal */}
+      {/* ══════════════════ API TOKENS MODAL ══════════════════ */}
       {isTokenModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
             <h2 className="text-lg font-bold">Manage API Tokens</h2>
             {isTokensLoading ? (
-              <p>Loading tokens...</p>
+              <p>Loading tokens…</p>
             ) : (
               <>
                 {generatedToken ? (
@@ -424,11 +559,11 @@ export default function ProfileActions({
         </div>
       )}
 
-      {/* TOTP Modal */}
+      {/* ══════════════════ TOTP MODAL ══════════════════ */}
       {isTotpModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
-            <h2 className="text-lg font-bold">Enable TOTP</h2>
+            <h2 className="text-lg font-bold">Enable TOTP Authenticator</h2>
             <p>Scan this QR code with your authenticator app:</p>
             {totpUri && (
               <div className="flex justify-center">
@@ -468,13 +603,14 @@ export default function ProfileActions({
         </div>
       )}
 
-      {/* Confirm Email Modal */}
+      {/* ══════════════════ CONFIRM EMAIL MODAL ══════════════════ */}
       {isConfirmEmailModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
             <h2 className="text-lg font-bold">Confirm Email</h2>
             <p className="text-sm text-gray-600">
-              Click &quot;Send Code&quot; to receive a confirmation code by email.
+              Click &quot;Send Code&quot; to receive a confirmation code by
+              email.
             </p>
             {!emailCodeSent ? (
               <button
@@ -482,7 +618,7 @@ export default function ProfileActions({
                 disabled={emailCodeSending}
                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {emailCodeSending ? 'Sending...' : 'Send Code'}
+                {emailCodeSending ? 'Sending…' : 'Send Code'}
               </button>
             ) : (
               <>

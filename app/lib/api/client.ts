@@ -6,17 +6,39 @@ export type ApiResponse<T> = {
   status: number;
 };
 
+// Auth paths that must never trigger a refresh retry
+const NO_RETRY_PATHS = new Set([
+  '/auth/refresh',
+  '/auth/sign',
+  '/auth/signup',
+  '/auth/lost-password/send-email',
+  '/auth/lost-password/verify',
+  '/auth/lost-password/change',
+]);
+
+async function attemptRefresh(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return res.ok || res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
   captcha?: { id: string; value: string },
+  isRetry = false,
 ): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = {
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers as Record<string, string>),
   };
 
-  // Plugin expects X-Captcha-Id and X-Captcha-Value
   if (captcha?.id) {
     headers['X-Captcha-Id'] = captcha.id;
     headers['X-Captcha-Value'] = captcha.value;
@@ -28,6 +50,14 @@ async function request<T>(
       credentials: 'include',
       headers,
     });
+
+    // On 401, attempt a single token refresh and retry the original request.
+    if (res.status === 401 && !isRetry && !NO_RETRY_PATHS.has(path)) {
+      const refreshed = await attemptRefresh();
+      if (refreshed) {
+        return request<T>(path, options, captcha, true);
+      }
+    }
 
     if (res.status === 204) {
       return { data: null, error: null, status: 204 };
@@ -63,7 +93,11 @@ export const apiClient = {
     captcha?: { id: string; value: string },
     headers?: Record<string, string>,
   ) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body), headers }, captcha),
+    request<T>(
+      path,
+      { method: 'POST', body: JSON.stringify(body), headers },
+      captcha,
+    ),
 
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),

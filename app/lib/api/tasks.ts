@@ -1,6 +1,12 @@
 import { apiClient } from './client';
 
-export type TaskStatus = 'searching' | 'in_progress' | 'waiting_approval' | 'completed';
+export type TaskStatus =
+  | 'searching'
+  | 'in_progress'
+  | 'waiting_approval'
+  | 'completed'
+  | 'disputed'
+  | 'cancelled';
 
 export interface Task {
   id: string;
@@ -21,6 +27,7 @@ export interface Task {
   rejectionMessage: string | null;
   contractTxHash: string | null;
   performerRating: number | null;
+  disputeRaisedBy: string | null;
   author?: PublicUser;
   performer?: PublicUser;
 }
@@ -35,6 +42,7 @@ export interface PublicUser {
   industry?: string | null;
   isBanned: boolean;
   isAdmin: boolean;
+  ethAddress?: string | null;
 }
 
 export interface TasksPage {
@@ -60,6 +68,7 @@ export interface EditTaskDto {
   categoryId?: string;
   price?: number;
   dueDate?: string;
+  contractTxHash?: string;
 }
 
 export const tasksApi = {
@@ -133,6 +142,27 @@ export const tasksApi = {
 
   async rateTask(id: string, rating: number) {
     return apiClient.post<Task>(`/v1/tasks/${id}/rate`, { rating });
+  },
+
+  /** Raise a dispute — changes status to 'disputed' in the backend. */
+  async raiseDispute(id: string, contractTxHash?: string) {
+    return apiClient.post<Task>(`/v1/tasks/${id}/raise-dispute`, { contractTxHash });
+  },
+
+  /**
+   * Admin: resolve a dispute.
+   * @param favorFreelancer true → pay freelancer; false → refund client
+   * @param contractTxHash  On-chain tx hash from resolveDispute() call
+   */
+  async resolveDispute(
+    id: string,
+    favorFreelancer: boolean,
+    contractTxHash?: string,
+  ) {
+    return apiClient.post<Task>(`/v1/tasks/${id}/resolve-dispute`, {
+      favorFreelancer,
+      contractTxHash,
+    });
   },
 
   async getPublicUser(userId: string) {

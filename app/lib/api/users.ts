@@ -11,6 +11,7 @@ export interface UserProfile {
   bio?: string;
   location?: string;
   industry?: string;
+  ethAddress?: string | null;
   activities: {
     categories: number;
     posts: number;
@@ -67,5 +68,10 @@ export const usersApi = {
 
   async updateIndustry(industry: string) {
     return apiClient.put<void>('/v1/u/me/industry', { industry });
+  },
+
+  /** Register the user's Ethereum wallet address. Pass empty string to clear. */
+  async updateEthAddress(ethAddress: string) {
+    return apiClient.put<void>('/v1/u/me/eth-address', { ethAddress });
   },
 };
