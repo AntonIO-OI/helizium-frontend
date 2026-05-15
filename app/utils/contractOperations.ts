@@ -2,8 +2,6 @@ import { ethers } from 'ethers';
 import { ContractAction, ContractResult } from '../types/contracts';
 import { generateContractMessage } from './contractMessages';
 
-// ──────────────── Contract ABI (matches TaskEscrow.sol) ────────────────
-
 const TASK_ESCROW_ABI = [
   'function fundTask(string calldata taskDbId) external payable',
   'function releaseToFreelancer(string calldata taskDbId, address freelancer) external',
@@ -27,8 +25,6 @@ const TASK_ESCROW_ABI = [
 ];
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-
-// ──────────────────────────── helpers ──────────────────────────────────
 
 function isValidContractAddress(addr: string | undefined): addr is string {
   return (
@@ -54,16 +50,11 @@ async function getSigner(): Promise<ethers.JsonRpcSigner | null> {
   }
 }
 
-async function isContractDeployed(
-  provider: ethers.BrowserProvider | ethers.JsonRpcSigner,
-  address: string,
-): Promise<boolean> {
+async function isContractDeployed(address: string): Promise<boolean> {
   try {
-    const p =
-      provider instanceof ethers.BrowserProvider
-        ? provider
-        : provider.provider as ethers.BrowserProvider;
-    const code = await p.getCode(address);
+    const provider = await getProvider();
+    if (!provider) return false;
+    const code = await provider.getCode(address);
     return code !== '0x' && code !== '0x0';
   } catch {
     return false;
@@ -78,8 +69,6 @@ function getContract(
   }
   return new ethers.Contract(CONTRACT_ADDRESS, TASK_ESCROW_ABI, signerOrProvider);
 }
-
-// ─────────────── message-signing (no on-chain state) ──────────────────
 
 export async function signTaskContract(
   action: ContractAction,
@@ -126,8 +115,6 @@ export async function signTaskContract(
   }
 }
 
-// ─────────────── on-chain write operations ─────────────────────────────
-
 export async function fundTaskOnChain(
   taskDbId: string,
   priceInEth: string,
@@ -139,7 +126,7 @@ export async function fundTaskOnChain(
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
 
-    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) {
       return { error: `No contract found at ${CONTRACT_ADDRESS}. Deploy first.` };
     }
 
@@ -170,7 +157,7 @@ export async function releasePaymentOnChain(
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
 
-    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) {
       return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
     }
 
@@ -196,13 +183,19 @@ export async function cancelTaskOnChain(
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
 
-    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) {
       return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
     }
 
     const contract = getContract(signer)!;
+    const state = await contract.getTaskState(taskDbId);
+    if (Number(state) === 0) {
+      return { error: 'Task was never funded on-chain, nothing to cancel.' };
+    }
+
     const tx = await contract.cancelTask(taskDbId);
     const receipt = await tx.wait();
+
     return { txHash: receipt.hash };
   } catch (err: any) {
     if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
@@ -222,7 +215,7 @@ export async function raiseDisputeOnChain(
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
 
-    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) {
       return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
     }
 
@@ -257,7 +250,7 @@ export async function resolveDisputeOnChain(
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
 
-    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) {
       return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
     }
 
@@ -292,7 +285,7 @@ export async function adminReleaseOnChain(
     const signer = await getSigner();
     if (!signer) return { error: 'MetaMask not connected' };
 
-    if (!(await isContractDeployed(signer, CONTRACT_ADDRESS))) {
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) {
       return { error: `No contract found at ${CONTRACT_ADDRESS}.` };
     }
 
@@ -308,15 +301,13 @@ export async function adminReleaseOnChain(
   }
 }
 
-// ──────────────────────────── read helpers ─────────────────────────────
-
 export async function getOnChainTaskState(taskDbId: string): Promise<number | null> {
   if (!isValidContractAddress(CONTRACT_ADDRESS)) return null;
   try {
     const provider = await getProvider();
     if (!provider) return null;
 
-    if (!(await isContractDeployed(provider, CONTRACT_ADDRESS))) return null;
+    if (!(await isContractDeployed(CONTRACT_ADDRESS))) return null;
 
     const contract = getContract(provider);
     if (!contract) return null;

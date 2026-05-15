@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { tasksApi, Task } from '../lib/api/tasks';
 import { categoriesApi, Category } from '../lib/api/categories';
 import Header from '../components/Header';
@@ -35,60 +36,73 @@ export default function Search() {
   const [isLoading, setIsLoading] = useState(true);
   const [isTasksLoading, setTasksLoading] = useState(false);
 
+  const rootId = categoriesApi.getRootId(categories);
+
   useEffect(() => {
-    categoriesApi.listAllCategories().then(setCategories);
+    categoriesApi.listAllCategories().then((cats) => {
+      setCategories(cats);
+      setIsLoading(false);
+    });
   }, []);
 
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [
     selectedCategoryId,
     activeSearch,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     priceRange[0],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     priceRange[1],
     sortConfig,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     dateRange[0],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     dateRange[1],
   ]);
 
-  useEffect(() => {
+  const fetchTasks = useCallback(() => {
     setTasksLoading(true);
     const sortFieldMap: Record<string, string> = {
       title: 'title',
       date: 'dueDate',
       price: 'price',
     };
+
+    // Don't send root as a filter — it means "all categories"
+    const effectiveCategoryId =
+      selectedCategoryId && selectedCategoryId !== rootId
+        ? selectedCategoryId
+        : undefined;
+
     tasksApi
       .listTasks({
         page: currentPage,
         limit: ITEMS_PER_PAGE,
-        categoryId: selectedCategoryId || undefined,
+        categoryId: effectiveCategoryId,
         search: activeSearch || undefined,
         minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
         maxPrice: priceRange[1] < 5000 ? priceRange[1] : undefined,
         fromDate: dateRange[0] || undefined,
         toDate: dateRange[1] || undefined,
-        sortBy: sortFieldMap[sortConfig.field] || 'postedAt',
+        sortBy: sortFieldMap[sortConfig.field] || 'createdAt',
         sortDir: sortConfig.direction,
       })
       .then((res) => {
         setTasks(res.data?.tasks ?? []);
         setTotal(res.data?.total ?? 0);
-        setIsLoading(false);
         setTasksLoading(false);
       });
   }, [
     currentPage,
     selectedCategoryId,
+    rootId,
     activeSearch,
     priceRange,
     dateRange,
     sortConfig,
   ]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -99,12 +113,15 @@ export default function Search() {
     setSearchQuery('');
     setActiveSearch('');
     setSortConfig({ field: 'date', direction: 'desc' });
+    setCurrentPage(1);
   };
 
   const handleNavigateToParent = () => {
     if (!selectedCategoryId) return;
     const current = categories.find((c) => c.id === selectedCategoryId);
-    setSelectedCategoryId(current?.parent ?? null);
+    const parentId = current?.parent ?? null;
+    // If parent is root, go back to "all categories" (null)
+    setSelectedCategoryId(parentId === rootId ? null : parentId);
   };
 
   if (isLoading) {
@@ -124,52 +141,82 @@ export default function Search() {
       <Header />
       <main className="flex-grow container mx-auto px-6 py-12">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-6">
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
-              onSearch={() => setActiveSearch(searchQuery)}
+              onSearch={() => {
+                setActiveSearch(searchQuery);
+                setCurrentPage(1);
+              }}
               onClear={() => {
                 setSearchQuery('');
                 setActiveSearch('');
+                setCurrentPage(1);
               }}
             />
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
-            <div className="w-full lg:w-80 flex-shrink-0">
-              <div className="sticky top-6 space-y-8">
-                <CategoryNavigation
-                  categories={categories}
-                  selectedCategory={selectedCategoryId}
-                  onNavigateToParent={handleNavigateToParent}
-                  onSelectCategory={setSelectedCategoryId}
-                />
+            <div className="w-full lg:w-72 flex-shrink-0">
+              <div className="sticky top-6 space-y-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">
+                    Browse Categories
+                  </h3>
+                  <CategoryNavigation
+                    categories={categories}
+                    selectedCategory={selectedCategoryId}
+                    onNavigateToParent={handleNavigateToParent}
+                    onSelectCategory={(id) => {
+                      setSelectedCategoryId(id);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
+
                 <FilterControls
                   priceRange={priceRange}
                   dateRange={dateRange}
-                  onPriceChange={setPriceRange}
-                  onDateChange={setDateRange}
+                  onPriceChange={(range) => {
+                    setPriceRange(range);
+                    setCurrentPage(1);
+                  }}
+                  onDateChange={(range) => {
+                    setDateRange(range);
+                    setCurrentPage(1);
+                  }}
                   onClearFilters={handleClearFilters}
                 />
               </div>
             </div>
 
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-bold">Tasks</h2>
-                  <span className="text-gray-500">{total} found</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-center mb-5">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-bold">Tasks</h2>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                    {total} found
+                  </span>
+                  {selectedCategoryId && selectedCategoryId !== rootId && (
+                    <span className="text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      {categories.find((c) => c.id === selectedCategoryId)
+                        ?.title || ''}
+                    </span>
+                  )}
                 </div>
                 <SortControls
                   sortConfig={sortConfig}
-                  onSortChange={setSortConfig}
+                  onSortChange={(s) => {
+                    setSortConfig(s);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
 
               {isTasksLoading ? <LoadingState /> : <TaskList tasks={tasks} />}
 
-              {totalPages > 1 && (
+              {totalPages > 1 && !isTasksLoading && (
                 <div className="flex justify-center gap-2 mt-8 flex-wrap">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -185,9 +232,9 @@ export default function Search() {
                     <button
                       key={n}
                       onClick={() => setCurrentPage(n)}
-                      className={`px-3 py-2 border rounded-md ${
+                      className={`px-3 py-2 border rounded-md transition ${
                         currentPage === n
-                          ? 'bg-black text-white'
+                          ? 'bg-black text-white border-black'
                           : 'hover:bg-gray-50'
                       }`}
                     >

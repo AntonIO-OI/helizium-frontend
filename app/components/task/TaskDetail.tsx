@@ -204,11 +204,21 @@ export default function TaskDetail({ task, author, currentUser, onTaskUpdate }: 
     doAction(async () => {
       if (!window.confirm('Are you sure you want to delete this task?')) return;
       const contract = await signTaskContract('delete', 0, task.title);
-      if (!contract.success) throw new Error(contract.error || 'Signing failed');
+      if (!contract.success)
+        throw new Error(contract.error || 'Signing failed');
 
-      // Best-effort on-chain cancel (refunds client if funded)
-      const onChain = await cancelTaskOnChain(task.id);
-      if ('error' in onChain) console.warn('On-chain cancel skipped:', onChain.error);
+      // Only attempt on-chain cancel if the task has a real tx hash (32 bytes = 66 chars).
+      // A MetaMask signature stored at creation time is 132 chars — not a tx hash.
+      const hasRealTxHash =
+        task.contractTxHash &&
+        task.contractTxHash.startsWith('0x') &&
+        task.contractTxHash.length === 66;
+
+      if (hasRealTxHash) {
+        const onChain = await cancelTaskOnChain(task.id);
+        if ('error' in onChain)
+          console.warn('On-chain cancel skipped:', onChain.error);
+      }
 
       const res = await tasksApi.deleteTask(task.id);
       if (res.error) throw new Error(res.error);

@@ -24,6 +24,7 @@ export default function ManageCategoriesPage() {
     }
     if (!authLoading && !isAdmin) {
       setShowAdminModal(true);
+      setIsLoading(false);
     }
     if (!authLoading && isAdmin) {
       categoriesApi.listAllCategories().then((cats) => {
@@ -55,13 +56,18 @@ export default function ManageCategoriesPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">Manage Categories</h1>
+            <div>
+              <h1 className="text-2xl font-bold">Manage Categories</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                {categories.length} categories total
+              </p>
+            </div>
             {isAdmin && (
               <Link
                 href="/category/create"
-                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition text-sm font-medium"
               >
-                Create Category
+                + Create Category
               </Link>
             )}
           </div>

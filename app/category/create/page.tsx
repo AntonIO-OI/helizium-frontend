@@ -4,18 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import { categoriesApi, Category } from '@/app/lib/api/categories';
+import {
+  categoriesApi,
+  Category,
+  ROOT_DISPLAY_NAME,
+} from '@/app/lib/api/categories';
 import { AlertCircle, X as XIcon } from 'lucide-react';
 import ChatModal from '@/app/components/ChatModal';
 import { useAuth } from '@/app/lib/hooks/useAuth';
 import Toast from '@/app/components/Toast';
 
 export default function CreateCategoryPage() {
-  const {
-    isLoading: authLoading,
-    isAuthenticated,
-    isAdmin,
-  } = useAuth();
+  const { isLoading: authLoading, isAuthenticated, isAdmin } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -39,12 +39,10 @@ export default function CreateCategoryPage() {
       return;
     }
     if (!authLoading && isAdmin) {
-      categoriesApi.getRoot().then((res) => {
-        if (res.data) {
-          setParentCategoryId(res.data.category.id);
-          const all = [res.data.category, ...res.data.nestedCategories];
-          setCategories(all);
-        }
+      categoriesApi.listAllCategories().then((all) => {
+        setCategories(all);
+        const rootId = categoriesApi.getRootId(all);
+        if (rootId) setParentCategoryId(rootId);
       });
     }
   }, [authLoading, isAuthenticated, isAdmin, router]);
@@ -88,11 +86,13 @@ export default function CreateCategoryPage() {
       setError(res.error);
       return;
     }
-    setToast({ message: 'Category created!', type: 'success' });
-    setTimeout(() => router.push('/categories/manage'), 1000);
+    setToast({ message: 'Category created successfully!', type: 'success' });
+    setTimeout(() => router.push('/categories/manage'), 1200);
   };
 
   if (authLoading) return null;
+
+  const rootId = categoriesApi.getRootId(categories);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,7 +152,9 @@ export default function CreateCategoryPage() {
               >
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.title}
+                    {cat.id === rootId
+                      ? ROOT_DISPLAY_NAME + ' (top level)'
+                      : cat.title}
                   </option>
                 ))}
               </select>

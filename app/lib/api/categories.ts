@@ -49,6 +49,15 @@ export interface EditCategoryDto {
   };
 }
 
+export const ROOT_DISPLAY_NAME = 'Helizium Marketplace';
+
+export function getCategoryDisplayName(category: Category): string {
+  if (!category.parent && (category.title === 'ROOT' || !category.parent)) {
+    return ROOT_DISPLAY_NAME;
+  }
+  return category.title;
+}
+
 export const categoriesApi = {
   async getRoot() {
     return apiClient.get<CategoryFullInfo>('/v1/categories');
@@ -91,7 +100,43 @@ export const categoriesApi = {
   async listAllCategories(): Promise<Category[]> {
     const root = await apiClient.get<CategoryFullInfo>('/v1/categories');
     if (!root.data) return [];
-    const all: Category[] = [root.data.category, ...root.data.nestedCategories];
+
+    const all: Category[] = [root.data.category];
+    const level1 = root.data.nestedCategories;
+    all.push(...level1);
+
+    // Fetch level 2 in parallel
+    const level2Results = await Promise.all(
+      level1.map((cat) =>
+        apiClient.get<CategoryFullInfo>(`/v1/categories/${cat.id}`)
+      )
+    );
+
+    const level2: Category[] = [];
+    for (const res of level2Results) {
+      if (res.data?.nestedCategories?.length) {
+        all.push(...res.data.nestedCategories);
+        level2.push(...res.data.nestedCategories);
+      }
+    }
+
+    // Fetch level 3 in parallel
+    const level3Results = await Promise.all(
+      level2.map((cat) =>
+        apiClient.get<CategoryFullInfo>(`/v1/categories/${cat.id}`)
+      )
+    );
+
+    for (const res of level3Results) {
+      if (res.data?.nestedCategories?.length) {
+        all.push(...res.data.nestedCategories);
+      }
+    }
+
     return all;
+  },
+
+  getRootId(categories: Category[]): string | null {
+    return categories.find((c) => c.parent === null || c.parent === undefined)?.id ?? null;
   },
 };

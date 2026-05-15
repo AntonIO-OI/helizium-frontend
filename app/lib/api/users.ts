@@ -29,21 +29,59 @@ export interface UserInfoResponse {
   topicPermissions: unknown[];
 }
 
+export interface CategoryPermissionRecord {
+  userId: string;
+  setBy: string;
+  categoryId: string;
+  categoriesGranted: string[];
+  categoriesRevoked: string[];
+  topicsGranted: string[];
+  topicsRevoked: string[];
+  revokedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const usersApi = {
   async getMe() {
     return apiClient.get<UserInfoResponse>('/v1/u/me');
   },
 
+  // Global permissions - correct backend routes
   async getGlobalPermissions(userId: string) {
-    return apiClient.get<{ permissions: string[] }>(`/v1/u/${userId}/permissions/global`);
+    return apiClient.get<{ permissions: string[] }>(`/v1/u/${userId}/p/g`);
   },
 
   async setGlobalPermissions(userId: string, permissions: string[]) {
-    return apiClient.post<void>(`/v1/u/${userId}/permissions/global`, { permissions });
+    return apiClient.post<void>(`/v1/u/${userId}/p/g`, { permissions });
   },
 
   async revokeAllGlobalPermissions(userId: string) {
-    return apiClient.delete<void>(`/v1/u/${userId}/permissions/global`);
+    return apiClient.delete<void>(`/v1/u/${userId}/p/g`);
+  },
+
+  // Category permissions
+  async getCategoryPermissions(userId: string, categoryId: string) {
+    return apiClient.get<{ permissions: CategoryPermissionRecord[] }>(
+      `/v1/u/${userId}/p/c/${categoryId}`
+    );
+  },
+
+  async setCategoryPermissions(
+    userId: string,
+    categoryId: string,
+    data: {
+      categoriesGranted: string[];
+      categoriesRevoked: string[];
+      topicsGranted: string[];
+      topicsRevoked: string[];
+    }
+  ) {
+    return apiClient.post<void>(`/v1/u/${userId}/p/c/${categoryId}`, data);
+  },
+
+  async revokeCategoryPermissions(userId: string, categoryId: string) {
+    return apiClient.delete<void>(`/v1/u/${userId}/p/c/${categoryId}`);
   },
 
   async banUser(userId: string) {
@@ -70,7 +108,6 @@ export const usersApi = {
     return apiClient.put<void>('/v1/u/me/industry', { industry });
   },
 
-  /** Register the user's Ethereum wallet address. Pass empty string to clear. */
   async updateEthAddress(ethAddress: string) {
     return apiClient.put<void>('/v1/u/me/eth-address', { ethAddress });
   },

@@ -38,7 +38,19 @@ export default function CreateTaskPage() {
       if (isBanned) setShowBannedModal(true);
       if (!isEmailConfirmed) setShowEmailModal(true);
     }
-    categoriesApi.listAllCategories().then(setCategories);
+    categoriesApi.listAllCategories().then((all) => {
+      // Filter out root category from the task creation dropdown
+      const rootId = categoriesApi.getRootId(all);
+      const postable = all.filter(
+        (c) =>
+          c.id !== rootId &&
+          c.parent !== null &&
+          c.parent !== undefined &&
+          c.allowedTopicTypes &&
+          c.allowedTopicTypes.length > 0,
+      );
+      setCategories(postable);
+    });
   }, [isLoading, isAuthenticated, isBanned, isEmailConfirmed, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +69,6 @@ export default function CreateTaskPage() {
 
     setIsSubmitting(true);
 
-    // 1. Sign a message as proof of intent (no gas).
     const contractResult = await signTaskContract('create', 0, title);
     if (!contractResult.success) {
       setError(contractResult.error || 'MetaMask signing failed.');
@@ -65,7 +76,6 @@ export default function CreateTaskPage() {
       return;
     }
 
-    // 2. Create the task in the backend → we get a task ID.
     const res = await tasksApi.createTask({
       title,
       content,
@@ -83,18 +93,15 @@ export default function CreateTaskPage() {
 
     const task = res.data!;
 
-    // 3. Fund the task on-chain (optional — only if price > 0).
     if (parseFloat(price) > 0) {
       setInfoMsg('Locking escrow funds on-chain via MetaMask…');
       const onChain = await fundTaskOnChain(task.id, price);
 
       if (!('error' in onChain)) {
-        // Update the task with the real tx hash.
         await tasksApi.editTask(task.id, { contractTxHash: onChain.txHash });
         setInfoMsg('');
       } else {
         setInfoMsg('');
-        // Non-fatal: task exists, but on-chain funding was skipped or rejected.
         const msg = `Task created (ID: …${task.id.slice(-8)}), but on-chain escrow funding failed: ${onChain.error}. You can fund the escrow contract manually later.`;
         setError(msg);
         setTimeout(() => router.push(`/task/${task.id}`), 5000);
@@ -108,6 +115,11 @@ export default function CreateTaskPage() {
 
   if (isLoading) return null;
   const disabled = isBanned || !isEmailConfirmed;
+
+  // Group categories by parent for display
+  const categoryOptions = categories.map((cat) => ({
+    ...cat,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -168,12 +180,18 @@ export default function CreateTaskPage() {
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-black"
               >
                 <option value="">Select a category</option>
-                {categories.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.title}
                   </option>
                 ))}
               </select>
+              {categoryOptions.length === 0 && (
+                <p className="text-sm text-amber-600 mt-1">
+                  No categories available. An admin needs to create categories
+                  first.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

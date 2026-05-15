@@ -17,6 +17,8 @@ import {
   BanIcon,
   MessageCircleIcon,
   MessageCircleOffIcon,
+  ShieldOff,
+  Settings2,
 } from 'lucide-react';
 import Link from 'next/link';
 import TaskList from '@/app/components/task/TaskList';
@@ -25,6 +27,7 @@ import ChatModal from '@/app/components/ChatModal';
 import Toast from '@/app/components/Toast';
 import PersonalChat from '@/app/components/PersonalChat';
 import { usersApi } from '@/app/lib/api/users';
+import { useRouter } from 'next/navigation';
 
 const PREVIEW_TASKS_COUNT = 3;
 
@@ -34,6 +37,7 @@ export default function ClientPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
+  const router = useRouter();
   const { userId, isAdmin, isBanned, isAuthenticated } = useAuth();
   const [client, setClient] = useState<PublicUser | null>(null);
   const [clientTasks, setClientTasks] = useState<Task[]>([]);
@@ -73,7 +77,18 @@ export default function ClientPage({
       return;
     }
     setClient((c) => (c ? { ...c, isBanned: true } : c));
-    setToast({ message: 'User banned', type: 'success' });
+    setToast({ message: 'User banned successfully', type: 'success' });
+  };
+
+  const unbanUserHandler = async () => {
+    if (!window.confirm('Are you sure you want to unban this user?')) return;
+    const res = await usersApi.unbanUser(resolvedParams.id);
+    if (res.error) {
+      setToast({ message: res.error, type: 'error' });
+      return;
+    }
+    setClient((c) => (c ? { ...c, isBanned: false } : c));
+    setToast({ message: 'User unbanned successfully', type: 'success' });
   };
 
   const recentTasks = clientTasks.slice(0, PREVIEW_TASKS_COUNT);
@@ -83,6 +98,8 @@ export default function ClientPage({
     userId !== resolvedParams.id &&
     !isBanned &&
     !client?.isBanned;
+
+  const isViewingOwnProfile = userId === resolvedParams.id;
 
   if (isLoading) {
     return (
@@ -143,63 +160,97 @@ export default function ClientPage({
           {/* Profile Header */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
             <div className="flex flex-col md:flex-row gap-8 items-start">
-              <div className="w-24 h-24 bg-black text-white rounded-full flex items-center justify-center text-3xl font-bold">
-                {client.username[0]}
+              <div className="w-24 h-24 bg-black text-white rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0">
+                {client.username[0].toUpperCase()}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
                   <h1 className="text-3xl font-bold">{client.username}</h1>
                   {client.isBanned && (
-                    <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-sm">
+                    <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-sm font-medium">
                       Banned
                     </span>
                   )}
                   {client.isAdmin && !client.isBanned && (
-                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full text-sm">
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
                       Admin
                     </span>
                   )}
+                  {isViewingOwnProfile && (
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      You
+                    </span>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Star className="w-5 h-5 text-yellow-400" />
-                    <span className="font-medium">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm font-medium">
                       {client.rating.toFixed(1)} Rating
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Award className="w-5 h-5 text-blue-500" />
-                    <span className="font-medium">
+                    <Award className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-medium">
                       {totalTasks} Tasks Posted
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Clock className="w-5 h-5" />
-                    <span className="font-medium">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-sm font-medium">
                       Member since {new Date(client.joinedDate).getFullYear()}
                     </span>
                   </div>
                 </div>
                 {client.bio && (
-                  <p className="text-gray-600 text-lg leading-relaxed mb-4">
+                  <p className="text-gray-600 leading-relaxed mb-4">
                     {client.bio}
                   </p>
                 )}
+
+                {/* Action buttons */}
                 <div className="flex flex-wrap gap-3">
-                  {isAdmin && !client.isAdmin && !client.isBanned && (
-                    <ProfileButton
-                      label="Ban user"
-                      variant="danger"
-                      icon={BanIcon}
-                      onClick={banUserHandler}
-                    />
+                  {/* Admin controls */}
+                  {isAdmin && !isViewingOwnProfile && (
+                    <>
+                      {!client.isBanned && !client.isAdmin && (
+                        <ProfileButton
+                          label="Ban User"
+                          variant="danger"
+                          icon={BanIcon}
+                          onClick={banUserHandler}
+                        />
+                      )}
+                      {client.isBanned && (
+                        <ProfileButton
+                          label="Unban User"
+                          variant="success"
+                          icon={ShieldOff}
+                          onClick={unbanUserHandler}
+                        />
+                      )}
+                      <ProfileButton
+                        label="Manage Permissions"
+                        variant="secondary"
+                        icon={Settings2}
+                        onClick={() =>
+                          router.push(
+                            `/admin/permissions/${resolvedParams.id}`
+                          )
+                        }
+                      />
+                    </>
                   )}
+
+                  {/* Chat button */}
                   {canChat && (
                     <ProfileButton
                       onClick={() => setShowChat(!showChat)}
-                      label={showChat ? 'Close chat' : 'Private chat'}
+                      label={showChat ? 'Close Chat' : 'Private Chat'}
                       variant="primary"
-                      icon={showChat ? MessageCircleOffIcon : MessageCircleIcon}
+                      icon={
+                        showChat ? MessageCircleOffIcon : MessageCircleIcon
+                      }
                     />
                   )}
                 </div>
@@ -250,7 +301,7 @@ export default function ClientPage({
                 <h2 className="text-xl font-semibold">Recent Tasks</h2>
                 <Link
                   href={`/client/${client.id}/tasks`}
-                  className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm"
                 >
                   <span>View all {totalTasks} tasks</span>
                   <ChevronRight className="w-4 h-4" />
