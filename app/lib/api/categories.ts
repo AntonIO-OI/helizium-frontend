@@ -101,9 +101,16 @@ export const categoriesApi = {
     const root = await apiClient.get<CategoryFullInfo>('/v1/categories');
     if (!root.data) return [];
 
-    const all: Category[] = [root.data.category];
+    // Use a Map keyed on id to eliminate duplicates across all levels
+    const seen = new Map<string, Category>();
+
+    const addUnique = (cat: Category) => {
+      if (!seen.has(cat.id)) seen.set(cat.id, cat);
+    };
+
+    addUnique(root.data.category);
     const level1 = root.data.nestedCategories;
-    all.push(...level1);
+    level1.forEach(addUnique);
 
     // Fetch level 2 in parallel
     const level2Results = await Promise.all(
@@ -115,8 +122,12 @@ export const categoriesApi = {
     const level2: Category[] = [];
     for (const res of level2Results) {
       if (res.data?.nestedCategories?.length) {
-        all.push(...res.data.nestedCategories);
-        level2.push(...res.data.nestedCategories);
+        for (const cat of res.data.nestedCategories) {
+          if (!seen.has(cat.id)) {
+            seen.set(cat.id, cat);
+            level2.push(cat);
+          }
+        }
       }
     }
 
@@ -129,11 +140,11 @@ export const categoriesApi = {
 
     for (const res of level3Results) {
       if (res.data?.nestedCategories?.length) {
-        all.push(...res.data.nestedCategories);
+        res.data.nestedCategories.forEach(addUnique);
       }
     }
 
-    return all;
+    return Array.from(seen.values());
   },
 
   getRootId(categories: Category[]): string | null {

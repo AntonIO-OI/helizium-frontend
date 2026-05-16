@@ -30,16 +30,19 @@ export default function ProfileStats({ userId }: { userId: string }) {
     if (!userId) return;
 
     const loadStats = async () => {
-      const [createdRes, takenRes] = await Promise.all([
+      const [createdRes, takenRes, completedRes] = await Promise.all([
         tasksApi.listTasks({ authorId: userId, limit: 1 }),
-        tasksApi.listTasks({ performerId: userId, limit: 100 }),
+        tasksApi.listTasks({ performerId: userId, limit: 1 }),
+        tasksApi.listTasks({
+          performerId: userId,
+          status: 'completed',
+          limit: 1,
+        }),
       ]);
 
       const createdTopics = createdRes.data?.total ?? 0;
       const takenTasks = takenRes.data?.total ?? 0;
-      const completedTasks =
-        takenRes.data?.tasks.filter((t) => t.status === 'completed').length ??
-        0;
+      const completedTasks = completedRes.data?.total ?? 0;
 
       setStats({ createdTopics, takenTasks, completedTasks });
       setIsLoading(false);

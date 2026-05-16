@@ -85,6 +85,7 @@ export const tasksApi = {
     sortDir?: 'asc' | 'desc';
     authorId?: string;
     performerId?: string;
+    status?: string;
   }) {
     const qs = new URLSearchParams();
     if (params) {
@@ -144,16 +145,10 @@ export const tasksApi = {
     return apiClient.post<Task>(`/v1/tasks/${id}/rate`, { rating });
   },
 
-  /** Raise a dispute — changes status to 'disputed' in the backend. */
   async raiseDispute(id: string, contractTxHash?: string) {
     return apiClient.post<Task>(`/v1/tasks/${id}/raise-dispute`, { contractTxHash });
   },
 
-  /**
-   * Admin: resolve a dispute.
-   * @param favorFreelancer true → pay freelancer; false → refund client
-   * @param contractTxHash  On-chain tx hash from resolveDispute() call
-   */
   async resolveDispute(
     id: string,
     favorFreelancer: boolean,
